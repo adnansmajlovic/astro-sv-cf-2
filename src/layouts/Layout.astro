@@ -1,22 +1,46 @@
-<!doctype html>
-<html lang="en">
-	<head>
-		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro Basics</title>
-	</head>
-	<body>
-		<slot />
-	</body>
-</html>
+---
+import "../styles/global.css";
+import Navbar from "../components/Navbar.svelte";
+import Counter from "../components/Counter.svelte";
 
-<style>
-	html,
-	body {
-		margin: 0;
-		width: 100%;
-		height: 100%;
-	}
-</style>
+const session = Astro.locals.session;
+---
+
+<!doctype html>
+<html lang="en" class="dark">
+    <head>
+        <meta charset="utf-8" />
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <meta name="viewport" content="width=device-width" />
+        <meta name="generator" content={Astro.generator} />
+        <title>Astro</title>
+        <script is:inline>
+            if (window.matchMedia("(prefers-color-scheme: light)").matches) {
+                document.documentElement.classList.remove("dark"); // Use light mode
+            } else {
+                document.documentElement.classList.add("dark"); // Default to dark mode
+            }
+        </script>
+    </head>
+    <body
+        class="dark bg-gray-100 text-gray-900 dark:bg-gray-900 dark:text-white"
+    >
+        <Navbar session={session} />
+        <Counter client:load />
+        <div class="p-4">
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-fuchsia-300">
+                Welcome to Astro with Svelte and Tailwind!
+            </h1>
+        </div>
+        <slot />
+    </body>
+
+    <style>
+        html,
+        body {
+            margin: 0;
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</html>
