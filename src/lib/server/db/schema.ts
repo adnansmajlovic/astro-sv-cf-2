@@ -10,7 +10,7 @@ export const user = sqliteTable("user", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
-  age: integer("age"),
+  name: text("name"),
   email: text("email").notNull().unique(),
   emailVerified: integer("email_verified", { mode: "boolean" })
     .default(false)
@@ -21,7 +21,7 @@ export const user = sqliteTable("user", {
     .notNull(),
   updatedAt: integer("updated_at", { mode: "timestamp" })
     .default(sql`(current_timestamp)`)
-    .$onUpdate(() => /* @__PURE__ */ new Date())
+    .$onUpdate(() => new Date())
     .notNull(),
 });
 
@@ -33,7 +33,7 @@ export const session = sqliteTable("session", {
     .default(sql`(current_timestamp)`)
     .notNull(),
   updatedAt: integer("updated_at", { mode: "timestamp" })
-    .$onUpdate(() => /* @__PURE__ */ new Date())
+    .$onUpdate(() => new Date())
     .notNull(),
   ipAddress: text("ip_address"),
   userAgent: text("user_agent"),
@@ -64,7 +64,7 @@ export const account = sqliteTable("account", {
     .default(sql`(current_timestamp)`)
     .notNull(),
   updatedAt: integer("updated_at", { mode: "timestamp" })
-    .$onUpdate(() => /* @__PURE__ */ new Date())
+    .$onUpdate(() => new Date())
     .notNull(),
 });
 
@@ -78,6 +78,6 @@ export const verification = sqliteTable("verification", {
     .notNull(),
   updatedAt: integer("updated_at", { mode: "timestamp" })
     .default(sql`(current_timestamp)`)
-    .$onUpdate(() => /* @__PURE__ */ new Date())
+    .$onUpdate(() => new Date())
     .notNull(),
 });

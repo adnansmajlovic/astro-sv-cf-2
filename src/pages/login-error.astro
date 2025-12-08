@@ -1,0 +1,305 @@
+---
+import Layout from "../layouts/Layout.astro";
+
+// Get error details from URL params if available
+const url = new URL(Astro.request.url);
+const error = url.searchParams.get("error");
+const errorDescription = url.searchParams.get("error_description");
+const state = url.searchParams.get("state");
+const code = url.searchParams.get("code");
+
+// Log error details for debugging
+console.log("Login error page accessed:", {
+    error,
+    errorDescription,
+    state,
+    code,
+    fullUrl: Astro.request.url,
+    userAgent: Astro.request.headers.get("user-agent"),
+    referer: Astro.request.headers.get("referer"),
+});
+
+// Common error messages mapping
+const errorMessages = {
+    access_denied:
+        "You denied access to your Google account. Please try again and allow access to continue.",
+    invalid_request:
+        "There was an issue with the authentication request. Please try again.",
+    unauthorized_client:
+        "The application is not authorized to make this request. Please contact support.",
+    unsupported_response_type:
+        "There was a technical issue with the authentication process. Please try again.",
+    invalid_scope:
+        "The requested permissions are invalid. Please contact support.",
+    server_error:
+        "Google's servers encountered an error. Please try again in a few moments.",
+    temporarily_unavailable:
+        "The authentication service is temporarily unavailable. Please try again later.",
+};
+
+const userFriendlyMessage =
+    errorMessages[error as keyof typeof errorMessages] ||
+    errorDescription ||
+    "An unexpected error occurred during authentication.";
+---
+
+<Layout title="Login Error - AstroAuth">
+    <main
+        class="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8"
+    >
+        <div class="max-w-md w-full space-y-8">
+            <div class="text-center">
+                <div class="mx-auto h-12 w-12 text-red-500">
+                    <svg
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
+                        ></path>
+                    </svg>
+                </div>
+                <h2
+                    class="mt-6 text-3xl font-extrabold text-gray-900 dark:text-white"
+                >
+                    Authentication Error
+                </h2>
+                <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                    Something went wrong during the login process
+                </p>
+            </div>
+
+            <div class="rounded-md bg-red-50 dark:bg-red-900 p-4">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <svg
+                            class="h-5 w-5 text-red-400"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                        >
+                            <path
+                                fill-rule="evenodd"
+                                d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                                clip-rule="evenodd"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <h3
+                            class="text-sm font-medium text-red-800 dark:text-red-200"
+                        >
+                            Login Failed
+                        </h3>
+                        <div
+                            class="mt-2 text-sm text-red-700 dark:text-red-300"
+                        >
+                            <p class="mb-2">{userFriendlyMessage}</p>
+
+                            {
+                                error && (
+                                    <details class="mt-3">
+                                        <summary class="cursor-pointer text-sm font-medium mb-2">
+                                            Technical Details (click to expand)
+                                        </summary>
+                                        <div class="pl-4 border-l-2 border-red-300 text-xs space-y-1">
+                                            <p>
+                                                <strong>Error Code:</strong>{" "}
+                                                {error}
+                                            </p>
+                                            {errorDescription && (
+                                                <p>
+                                                    <strong>
+                                                        Description:
+                                                    </strong>{" "}
+                                                    {errorDescription}
+                                                </p>
+                                            )}
+                                            {state && (
+                                                <p>
+                                                    <strong>State:</strong>{" "}
+                                                    {state}
+                                                </p>
+                                            )}
+                                            {code && (
+                                                <p>
+                                                    <strong>Code:</strong>{" "}
+                                                    {code}
+                                                </p>
+                                            )}
+                                            <p>
+                                                <strong>URL:</strong>{" "}
+                                                {Astro.request.url}
+                                            </p>
+                                        </div>
+                                    </details>
+                                )
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-6">
+                <div class="space-y-4">
+                    <a
+                        href="/"
+                        class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    >
+                        <svg
+                            class="w-5 h-5 mr-2"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"
+                            ></path>
+                        </svg>
+                        Try Sign In Again
+                    </a>
+
+                    <a
+                        href="/api/auth/session"
+                        class="group relative w-full flex justify-center py-2 px-4 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700"
+                    >
+                        <svg
+                            class="w-5 h-5 mr-2"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                            ></path>
+                        </svg>
+                        Check Authentication Status
+                    </a>
+
+                    <div
+                        class="text-center text-sm text-gray-600 dark:text-gray-400"
+                    >
+                        <p>
+                            Still having issues? <a
+                                href="mailto:support@example.com"
+                                class="text-blue-600 hover:text-blue-500"
+                                >Contact support</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-8 space-y-4">
+                <div
+                    class="bg-yellow-50 dark:bg-yellow-900 border border-yellow-200 dark:border-yellow-800 rounded-md p-4"
+                >
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg
+                                class="h-5 w-5 text-yellow-400"
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                            >
+                                <path
+                                    fill-rule="evenodd"
+                                    d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                                    clip-rule="evenodd"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <h3
+                                class="text-sm font-medium text-yellow-800 dark:text-yellow-200"
+                            >
+                                Troubleshooting Steps
+                            </h3>
+                            <div
+                                class="mt-2 text-sm text-yellow-700 dark:text-yellow-300"
+                            >
+                                <ol class="list-decimal list-inside space-y-1">
+                                    <li>
+                                        Ensure cookies and JavaScript are
+                                        enabled
+                                    </li>
+                                    <li>
+                                        Disable pop-up blockers for this site
+                                    </li>
+                                    <li>
+                                        Try using an incognito/private browsing
+                                        window
+                                    </li>
+                                    <li>
+                                        Clear your browser cache and cookies
+                                    </li>
+                                    <li>
+                                        Check if your Google account is
+                                        accessible
+                                    </li>
+                                    <li>
+                                        Verify you're using a supported browser
+                                    </li>
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {
+                    error === "access_denied" && (
+                        <div class="bg-blue-50 dark:bg-blue-900 border border-blue-200 dark:border-blue-800 rounded-md p-4">
+                            <div class="flex">
+                                <div class="flex-shrink-0">
+                                    <svg
+                                        class="h-5 w-5 text-blue-400"
+                                        fill="currentColor"
+                                        viewBox="0 0 20 20"
+                                    >
+                                        <path
+                                            fill-rule="evenodd"
+                                            d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                                            clip-rule="evenodd"
+                                        />
+                                    </svg>
+                                </div>
+                                <div class="ml-3">
+                                    <h3 class="text-sm font-medium text-blue-800 dark:text-blue-200">
+                                        Access Denied Help
+                                    </h3>
+                                    <div class="mt-2 text-sm text-blue-700 dark:text-blue-300">
+                                        <p>
+                                            You chose not to grant permission to
+                                            your Google account. To sign in
+                                            successfully:
+                                        </p>
+                                        <ul class="list-disc list-inside mt-2 space-y-1">
+                                            <li>
+                                                Click "Allow" when Google asks
+                                                for permissions
+                                            </li>
+                                            <li>
+                                                Make sure you're signed into the
+                                                correct Google account
+                                            </li>
+                                            <li>
+                                                Try signing out of all Google
+                                                accounts and back in
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )
+                }
+            </div>
+        </div>
+    </main>
+</Layout>

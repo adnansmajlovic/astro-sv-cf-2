@@ -1,5 +1,120 @@
 ---
 import Layout from "../layouts/Layout.astro";
+import Navbar from "../components/Navbar.svelte";
+
+// Get the session from the auth instance
+const auth = Astro.locals.auth;
+let session = null;
+let user = null;
+
+try {
+    const sessionData = await auth.api.getSession({
+        headers: Astro.request.headers,
+    });
+
+    if (sessionData) {
+        session = sessionData.session;
+        user = sessionData.user;
+    }
+} catch (error) {
+    console.error("Error getting session:", error);
+}
+
+console.log("Session debug:", {
+    session: session
+        ? {
+              id: session.id,
+              userId: session.userId,
+              expiresAt: session.expiresAt,
+          }
+        : null,
+    user: user
+        ? {
+              id: user.id,
+              name: user.name,
+              email: user.email,
+              image: user.image,
+              emailVerified: user.emailVerified,
+          }
+        : null,
+});
 ---
 
-<Layout> Welcome 123 </Layout>
+<Layout title="AstroAuth - Welcome">
+    <Navbar session={session} auth={auth} client:load />
+
+    <main class="container mx-auto px-4 py-8">
+        {
+            session ? (
+                <div class="text-center">
+                    <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+                        Welcome back, {user?.name || user?.email || "User"}!
+                    </h1>
+                    <p class="text-xl text-gray-600 dark:text-gray-300 mb-8">
+                        You are successfully authenticated with Google.
+                    </p>
+
+                    <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-6 max-w-md mx-auto">
+                        <h2 class="text-2xl font-semibold mb-4">
+                            Your Profile
+                        </h2>
+                        {user?.image ? (
+                            <img
+                                src={user.image}
+                                alt="Profile"
+                                class="w-24 h-24 rounded-full mx-auto mb-4 object-cover"
+                                referrerpolicy="no-referrer"
+                            />
+                        ) : (
+                            <div class="w-24 h-24 rounded-full bg-gray-400 dark:bg-gray-600 flex items-center justify-center mx-auto mb-4">
+                                <svg
+                                    class="w-12 h-12 text-white"
+                                    fill="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" />
+                                </svg>
+                            </div>
+                        )}
+                        <div class="space-y-2 text-left">
+                            <p>
+                                <strong>Name:</strong>{" "}
+                                {user?.name || "Not provided"}
+                            </p>
+                            <p>
+                                <strong>Email:</strong>{" "}
+                                {user?.email || "Not provided"}
+                            </p>
+                            <p>
+                                <strong>ID:</strong>{" "}
+                                {user?.id || "Not provided"}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            ) : (
+                <div class="text-center">
+                    <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+                        Welcome to AstroAuth
+                    </h1>
+                    <p class="text-xl text-gray-600 dark:text-gray-300 mb-8">
+                        A modern authentication system built with Astro, Svelte,
+                        and Better Auth.
+                    </p>
+
+                    <div class="bg-blue-50 dark:bg-blue-900 rounded-lg p-6 max-w-md mx-auto">
+                        <h2 class="text-2xl font-semibold mb-4">Get Started</h2>
+                        <p class="text-gray-700 dark:text-gray-300 mb-4">
+                            Sign in with your Google account to access your
+                            personalized dashboard.
+                        </p>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">
+                            Click the "Sign In with Google" button in the
+                            navigation bar above.
+                        </p>
+                    </div>
+                </div>
+            )
+        }
+    </main>
+</Layout>

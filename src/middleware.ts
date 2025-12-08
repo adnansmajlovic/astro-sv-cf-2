@@ -3,23 +3,60 @@ import { getAuth } from "@lib/auth";
 
 import { defineMiddleware } from "astro:middleware";
 export const onRequest = defineMiddleware(async (context, next) => {
-  console.log({ c: context.locals.runtime.env });
-  const { locals, csp } = context;
+  const { locals, url } = context;
 
-  context.locals.db = getDb(context.locals.runtime.env?.DB);
-  context.locals.auth = getAuth(context.locals.db);
-  console.log({ auth: context.locals.auth, session: context.locals.session });
-  // const isAuthed = await getAuth.api.getSession({
-  //   headers: context.request.headers,
-  // });
-  // if (isAuthed) {
-  //   console.log("is authed");
-  //   context.locals.user = isAuthed.user;
-  //   context.locals.session = isAuthed.session;
-  // } else {
-  //   console.log("!authed");
-  //   context.locals.user = null;
-  //   context.locals.session = null;
-  // }
+  try {
+    // Log environment setup for debugging
+    const env = context.locals.runtime?.env || {};
+    console.log("Middleware setup:", {
+      url: url.pathname,
+      hasDB: !!env.DB,
+      hasGoogleClientId: !!env.GOOGLE_CLIENT_ID,
+      hasGoogleClientSecret: !!env.GOOGLE_CLIENT_SECRET,
+      hasBetterAuthSecret: !!env.BETTER_AUTH_SECRET,
+      betterAuthUrl: env.BETTER_AUTH_URL || env.ASTRO_BASE_URL || "not set",
+    });
+
+    // Initialize database connection
+    const db = getDb(env.DB);
+    if (!db) {
+      console.error("Failed to initialize database connection");
+      throw new Error("Database connection failed");
+    }
+    context.locals.db = db;
+
+    // Initialize auth with environment variables
+    const auth = getAuth(db, env);
+    if (!auth) {
+      console.error("Failed to initialize auth");
+      throw new Error("Auth initialization failed");
+    }
+    context.locals.auth = auth;
+
+    console.log("Middleware setup complete for:", url.pathname);
+  } catch (error) {
+    console.error("Middleware error:", {
+      error: error instanceof Error ? error.message : error,
+      url: url.pathname,
+    });
+
+    // For auth routes, return proper error response
+    if (url.pathname.startsWith("/api/auth")) {
+      return new Response(
+        JSON.stringify({
+          error: "Server configuration error",
+          message: error instanceof Error ? error.message : "Unknown error",
+        }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        },
+      );
+    }
+
+    // For other routes, let them continue but log the error
+    console.warn("Continuing with incomplete middleware setup");
+  }
+
   return next();
 });

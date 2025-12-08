@@ -34,7 +34,9 @@ pnpm add @libsql/client
 
 # Because of CF we have to use getDb and getAuth. 
 
-
-
+wrangler secret put GOOGLE_CLIENT_ID
+wrangler secret put GOOGLE_CLIENT_SECRET  
+wrangler secret put BETTER_AUTH_SECRET
+wrangler secret put BETTER_AUTH_URL
 
 ```
