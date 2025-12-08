@@ -1,0 +1,34 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1765150993655,
+      "tag": "0000_neat_peter_quill",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1765198692008,
+      "tag": "0001_chunky_proemial_gods",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1765205188348,
+      "tag": "0002_slim_miek",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1765205494740,
+      "tag": "0003_polite_ben_grimm",
+      "breakpoints": true
+    }
+  ]
+}

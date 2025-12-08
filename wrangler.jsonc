@@ -21,9 +21,20 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "adnan-test",
-      "database_id": "d3cefa38-0660-48a2-9618-9dd0650163cf",
+      "database_name": "a-1",
+      "database_id": "8905527a-c8e4-42c3-aba0-108cbc4fa72c",
       "migrations_dir": "./src/lib/server/db/migrations"
-    }
+    },
+    // {
+    //   "binding": "DB",
+    //   "database_name": "adnan-test",
+    //   // "database_id": "d3cefa38-0660-48a2-9618-9dd0650163cf",
+    //   "migrations_dir": "./src/lib/server/db/migrations"
+    // },
+    // {
+    //   "binding": "DB2",
+    //   "database_name": "adnan-test-cf-2",
+    //   // "database_id": "6c93691f-f917-4fab-9b3b-f013cf9134f9"
+    // }
   ]
 }
