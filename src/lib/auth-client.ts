@@ -9,8 +9,9 @@ const getBaseURL = () => {
 
   // Fallback to environment variables or localhost
   return (
-    import.meta.env.PUBLIC_BETTER_AUTH_URL ||
-    import.meta.env.PUBLIC_ASTRO_BASE_URL ||
+    // import.meta.env.PUBLIC_BETTER_AUTH_URL ||
+    import.meta.env.BETTER_AUTH_URL ||
+    // import.meta.env.PUBLIC_ASTRO_BASE_URL ||
     "http://localhost:4321"
   );
 };
@@ -19,7 +20,7 @@ const baseURL = getBaseURL();
 
 console.log("Auth client config:", {
   baseURL,
-  env: import.meta.env.PUBLIC_BETTER_AUTH_URL,
+  // env1: import.meta.env.PUBLIC_BETTER_AUTH_URL,
 });
 
 export const authClient = createAuthClient({
@@ -82,7 +83,7 @@ export const signOut = async (
       ...options,
     });
 
-    console.log("Sign-out completed:", data);
+    console.log("Sign-out completed:", JSON.stringify(data));
 
     // Force redirect after successful sign out
     if (options.redirectTo) {

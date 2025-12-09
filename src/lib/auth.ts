@@ -58,6 +58,22 @@ export function getAuth(db: DrizzleClient, env?: Record<string, any>) {
           return ctx;
         },
       },
+      // signOut: {
+      //   before: async (ctx: Context) => {
+      //     console.log("Before sign out callback:", {
+      //       user: ctx.user,
+      //       account: ctx.account,
+      //     });
+      //     return ctx;
+      //   },
+      //   after: async (ctx: Context) => {
+      //     console.log("After sign out callback:", {
+      //       user: ctx.user,
+      //       session: ctx.session,
+      //     });
+      //     return ctx;
+      //   },
+      // },
     },
     secret: environment.BETTER_AUTH_SECRET as string,
     baseURL:
@@ -69,6 +85,7 @@ export function getAuth(db: DrizzleClient, env?: Record<string, any>) {
       "http://localhost:8787",
       "http://localhost:5173",
       "https://astro-sv-cf-2.pages.dev",
+      "https://astro-sv-cf-2.mars-dd-dev.workers.dev",
       ...(environment.BETTER_AUTH_URL ? [environment.BETTER_AUTH_URL] : []),
       ...(environment.ASTRO_BASE_URL ? [environment.ASTRO_BASE_URL] : []),
     ],
