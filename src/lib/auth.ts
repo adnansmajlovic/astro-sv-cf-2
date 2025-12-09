@@ -7,8 +7,11 @@ type Context = any;
 
 export function getAuth(db: DrizzleClient, env?: Record<string, any>) {
   // Use provided env or fallback to process.env
+  //
   const environment =
-    env || (typeof process !== "undefined" ? process.env : {});
+    env ||
+    import.meta?.env ||
+    (typeof process !== "undefined" ? process.env : {});
 
   console.log("Setting up Better Auth with config:", {
     hasDb: !!db,

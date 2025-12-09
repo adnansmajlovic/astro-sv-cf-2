@@ -1,38 +1,31 @@
 import { getDb } from "@lib/server/db";
-import { getAuth } from "@lib/auth";
+import type { MiddlewareHandler } from "astro";
 
-import { defineMiddleware } from "astro:middleware";
-export const onRequest = defineMiddleware(async (context, next) => {
-  const { locals, url } = context;
-
+export const runtime: MiddlewareHandler = async (
+  { locals, url },
+  next,
+): Promise<Response> => {
   try {
-    // Log environment setup for debugging
-    const env = context.locals.runtime?.env || {};
-    console.log("Middleware setup:", {
-      url: url.pathname,
-      hasDB: !!env.DB,
-      hasGoogleClientId: !!env.GOOGLE_CLIENT_ID,
-      hasGoogleClientSecret: !!env.GOOGLE_CLIENT_SECRET,
-      hasBetterAuthSecret: !!env.BETTER_AUTH_SECRET,
-      betterAuthUrl: env.BETTER_AUTH_URL || env.ASTRO_BASE_URL || "not set",
-    });
+    const env = locals.runtime?.env || {};
+
+    // // Log environment setup for debugging
+    // console.log("Middleware setup:", {
+    //   url: url.pathname,
+    //   hasDB: !!env.DB,
+    //   hasGoogleClientId: !!env.GOOGLE_CLIENT_ID,
+    //   hasGoogleClientSecret: !!env.GOOGLE_CLIENT_SECRET,
+    //   hasBetterAuthSecret: !!env.BETTER_AUTH_SECRET,
+    //   betterAuthUrl: env.BETTER_AUTH_URL || env.ASTRO_BASE_URL || "not set",
+    // });
 
     // Initialize database connection
     const db = getDb(env.DB);
+
     if (!db) {
       console.error("Failed to initialize database connection");
       throw new Error("Database connection failed");
     }
-    context.locals.db = db;
-
-    // Initialize auth with environment variables
-    const auth = getAuth(db, env);
-    if (!auth) {
-      console.error("Failed to initialize auth");
-      throw new Error("Auth initialization failed");
-    }
-    context.locals.auth = auth;
-
+    locals.db = db;
     console.log("Middleware setup complete for:", url.pathname);
   } catch (error) {
     console.error("Middleware error:", {
@@ -59,4 +52,4 @@ export const onRequest = defineMiddleware(async (context, next) => {
   }
 
   return next();
-});
+};

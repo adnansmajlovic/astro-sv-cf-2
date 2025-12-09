@@ -1,6 +1,6 @@
 <script>
     import { authClient, signIn, signOut } from "$lib/auth-client";
-    let { session, auth } = $props();
+    let { session, auth, user } = $props();
     let isLoading = $state(false);
     let error = $state(null);
 
@@ -107,9 +107,10 @@
                     {/if}
                 </button>
                 <div class="flex items-center gap-2">
-                    {#if session?.user?.image}
+                    <!-- {#if session.user?.image} -->
+                    {#if user?.image}
                         <img
-                            src={session.user.image}
+                            src={user.image}
                             alt="Profile"
                             class="w-10 h-10 rounded-full object-cover"
                             referrerpolicy="no-referrer"
@@ -130,7 +131,7 @@
                         </div>
                     {/if}
                     <span class="text-gray-900 dark:text-white">
-                        {session?.user?.name || session?.user?.email || "User"}
+                        {user?.name || user?.email || "User"}
                     </span>
                 </div>
             {:else}

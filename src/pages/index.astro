@@ -4,44 +4,46 @@ import Navbar from "../components/Navbar.svelte";
 
 // Get the session from the auth instance
 const auth = Astro.locals.auth;
-let session = null;
-let user = null;
+let session = Astro.locals.session;
+let user = Astro.locals.user;
 
 try {
-    const sessionData = await auth.api.getSession({
-        headers: Astro.request.headers,
-    });
-
-    if (sessionData) {
-        session = sessionData.session;
-        user = sessionData.user;
-    }
+    // const sessionData = await auth.api.getSession({
+    //     headers: Astro.request.headers,
+    // });
+    // if (sessionData) {
+    //     session = sessionData.session;
+    //     user = sessionData.user;
+    // }
+    //
+    // user = Astro.locals.user;
+    // session = Astro.locals.session;
 } catch (error) {
     console.error("Error getting session:", error);
 }
 
-console.log("Session debug:", {
-    session: session
-        ? {
-              id: session.id,
-              userId: session.userId,
-              expiresAt: session.expiresAt,
-          }
-        : null,
-    user: user
-        ? {
-              id: user.id,
-              name: user.name,
-              email: user.email,
-              image: user.image,
-              emailVerified: user.emailVerified,
-          }
-        : null,
-});
+// console.log("Session debug:", {
+//     session: session
+//         ? {
+//               id: session.id,
+//               userId: session.userId,
+//               expiresAt: session.expiresAt,
+//           }
+//         : null,
+//     user: user
+//         ? {
+//               id: user.id,
+//               name: user.name,
+//               email: user.email,
+//               image: user.image,
+//               emailVerified: user.emailVerified,
+//           }
+//         : null,
+// });
 ---
 
 <Layout title="AstroAuth - Welcome">
-    <Navbar session={session} auth={auth} client:load />
+    <Navbar session={session} auth={auth} user={user} client:load />
 
     <main class="container mx-auto px-4 py-8">
         {
