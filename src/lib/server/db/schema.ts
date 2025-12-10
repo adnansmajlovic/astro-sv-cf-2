@@ -6,6 +6,13 @@ import {
 } from "drizzle-orm/sqlite-core";
 import { sql, type InferInsertModel, type InferSelectModel } from "drizzle-orm";
 
+// --- Roles -------------------------------------------------------------------
+
+export const userRoles = ["user", "admin", "super_admin"] as const;
+export type UserRole = (typeof userRoles)[number];
+
+// --- Tables ------------------------------------------------------------------
+
 export const user = sqliteTable("user", {
   id: text("id")
     .primaryKey()
@@ -16,6 +23,10 @@ export const user = sqliteTable("user", {
     .default(false)
     .notNull(),
   image: text("image"),
+
+  // NEW: simple single-role field
+  role: text("role", { enum: userRoles }).notNull().default("user"),
+
   createdAt: integer("created_at", { mode: "timestamp" })
     .default(sql`(current_timestamp)`)
     .notNull(),
@@ -81,3 +92,10 @@ export const verification = sqliteTable("verification", {
     .$onUpdate(() => new Date())
     .notNull(),
 });
+
+// --- Types -------------------------------------------------------------------
+
+export type SelectUser = InferSelectModel<typeof user>;
+export type InsertUser = InferInsertModel<typeof user>;
+
+export type DbUser = typeof user.$inferSelect;

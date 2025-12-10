@@ -7,6 +7,9 @@ const auth = Astro.locals.auth;
 let session = Astro.locals.session;
 let user = Astro.locals.user;
 
+console.log({ user });
+console.log({ role1: user?.role });
+
 try {
     // const sessionData = await auth.api.getSession({
     //     headers: Astro.request.headers,
@@ -90,6 +93,10 @@ try {
                             <p>
                                 <strong>ID:</strong>{" "}
                                 {user?.id || "Not provided"}
+                            </p>
+                            <p>
+                                <strong>Role:</strong>{" "}
+                                {user?.role || "Not provided"}
                             </p>
                         </div>
                     </div>

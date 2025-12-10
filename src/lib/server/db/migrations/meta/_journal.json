@@ -43,6 +43,13 @@
       "when": 1765232135066,
       "tag": "0005_unusual_cammi",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1765322788210,
+      "tag": "0006_dusty_white_tiger",
+      "breakpoints": true
     }
   ]
 }
