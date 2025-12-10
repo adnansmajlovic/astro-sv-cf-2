@@ -7,5 +7,6 @@ declare namespace App {
     auth: BetterAuth;
     user: import("better-auth").User | null;
     session: import("better-auth").Session | null;
+    csrfToken: AstroCookie | string | undefined | null;
   }
 }
