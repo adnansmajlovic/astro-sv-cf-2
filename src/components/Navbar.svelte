@@ -1,8 +1,12 @@
-<script>
+<script lang="ts">
     import { authClient, signIn, signOut } from "$lib/auth-client";
+    import { SpatialMenu } from "melt/builders";
+
     let { session, auth, user } = $props();
     let isLoading = $state(false);
     let error = $state(null);
+
+    // --- Auth ----------------------------------------------------------------
 
     async function loginWithGoogle() {
         if (isLoading) return;
@@ -11,7 +15,6 @@
             isLoading = true;
             error = null;
             console.log("Initiating Google login...");
-            console.log("Auth client base URL:", authClient.baseURL);
 
             await signIn({
                 callbackURL: window.location.origin + "/",
@@ -24,7 +27,6 @@
             console.error("Error logging in with Google:", err);
             error = "Login failed. Please try again.";
 
-            // Only show alert for unexpected errors (not redirects)
             if (err instanceof Error && !err.message.includes("redirect")) {
                 setTimeout(() => {
                     error = null;
@@ -52,7 +54,6 @@
             console.error("Error logging out:", err);
             error = "Logout failed. Please try again.";
 
-            // Force redirect even on error for security
             setTimeout(() => {
                 window.location.href = "/";
             }, 1000);
@@ -60,15 +61,65 @@
             isLoading = false;
         }
     }
+
+    // --- Admin SpatialMenu in navbar ----------------------------------------
+
+    type AdminItemId = "users" | "sessions" | "settings";
+
+    const ADMIN_ITEMS: {
+        id: AdminItemId;
+        label: string;
+        emoji: string;
+        href: string;
+    }[] = [
+        {
+            id: "users",
+            label: "User admin",
+            emoji: "👥",
+            href: "/admin/users", // 🔗 hook into user admin page
+        },
+        {
+            id: "sessions",
+            label: "Sessions",
+            emoji: "🕒",
+            href: "/admin/sessions",
+        },
+        {
+            id: "settings",
+            label: "Settings",
+            emoji: "⚙️",
+            href: "/admin/settings",
+        },
+    ];
+
+    let adminMenuOpen = $state(false);
+
+    function handleAdminSelect(id: AdminItemId) {
+        const item = ADMIN_ITEMS.find((i) => i.id === id);
+        if (!item) return;
+        window.location.href = item.href;
+    }
+
+    const adminMenu = new SpatialMenu<AdminItemId>({
+        onSelect: (value) => {
+            handleAdminSelect(value);
+            adminMenuOpen = false;
+        },
+        wrap: true,
+    });
+
+    const isAdmin =
+        user && (user.role === "admin" || user.role === "super_admin");
 </script>
 
 <nav class="bg-gray-200 dark:bg-gray-800 p-4">
     <div class="container mx-auto flex justify-between items-center">
         <div class="left-side">
-            <a href="/" class="text-xl font-bold text-gray-900 dark:text-white"
-                >AstroAuth</a
-            >
+            <a href="/" class="text-xl font-bold text-gray-900 dark:text-white">
+                AstroAuth
+            </a>
         </div>
+
         <div class="right-side flex items-center gap-4">
             {#if error}
                 <div
@@ -106,33 +157,93 @@
                         Sign Out
                     {/if}
                 </button>
-                <div class="flex items-center gap-2">
-                    <!-- {#if session.user?.image} -->
-                    {#if user?.image}
-                        <img
-                            src={user.image}
-                            alt="Profile"
-                            class="w-10 h-10 rounded-full object-cover"
-                            referrerpolicy="no-referrer"
-                        />
-                    {:else}
-                        <div
-                            class="w-10 h-10 rounded-full bg-gray-400 dark:bg-gray-600 flex items-center justify-center"
-                        >
-                            <svg
-                                class="w-6 h-6 text-white"
-                                fill="currentColor"
-                                viewBox="0 0 24 24"
+
+                <div class="flex items-center gap-3">
+                    <div class="flex items-center gap-2">
+                        {#if user?.image}
+                            <img
+                                src={user.image}
+                                alt="Profile"
+                                class="w-10 h-10 rounded-full object-cover"
+                                referrerpolicy="no-referrer"
+                            />
+                        {:else}
+                            <div
+                                class="w-10 h-10 rounded-full bg-gray-400 dark:bg-gray-600 flex items-center justify-center"
                             >
-                                <path
-                                    d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z"
-                                />
-                            </svg>
+                                <svg
+                                    class="w-6 h-6 text-white"
+                                    fill="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z"
+                                    />
+                                </svg>
+                            </div>
+                        {/if}
+                        <span class="text-gray-900 dark:text-white">
+                            {user?.name || user?.email || "User"}
+                        </span>
+                    </div>
+
+                    {#if isAdmin}
+                        <div class="relative">
+                            <!-- Admin launcher button -->
+                            <button
+                                class="inline-flex items-center gap-2 px-3 py-2 rounded-lg
+                                       bg-gray-900 dark:bg-gray-700
+                                       text-gray-100 text-sm font-medium
+                                       border border-gray-700 dark:border-gray-600
+                                       hover:bg-gray-800 hover:dark:bg-gray-600
+                                       transition-colors"
+                                onclick={() => (adminMenuOpen = !adminMenuOpen)}
+                            >
+                                <span aria-hidden="true">🛠️</span>
+                                <span>Admin</span>
+                            </button>
+
+                            {#if adminMenuOpen}
+                                <div
+                                    {...adminMenu.root}
+                                    class="absolute right-0 mt-3
+                                           grid grid-cols-3 gap-4 p-4
+                                           rounded-2xl
+                                           bg-gray-900/95 dark:bg-gray-900/95
+                                           border border-gray-700 dark:border-gray-700
+                                           shadow-2xl backdrop-blur-md
+                                           text-xs z-50 min-w-[14rem]"
+                                >
+                                    {#each ADMIN_ITEMS as item}
+                                        <button
+                                            {...adminMenu.getItem(item.id)}
+                                            title={item.label}
+                                            onclick={() => {
+                                                handleAdminSelect(item.id);
+                                                adminMenuOpen = false;
+                                            }}
+                                            class="w-16 h-16
+                                                   flex items-center justify-center
+                                                   rounded-2xl
+                                                   bg-gray-800/80
+                                                   hover:bg-gray-700/80
+                                                   data-[highlighted]:bg-gray-700
+                                                   data-[selected]:ring-2 data-[selected]:ring-indigo-500
+                                                   text-gray-50 text-2xl
+                                                   transition-colors"
+                                        >
+                                            <span aria-hidden="true">
+                                                {item.emoji}
+                                            </span>
+                                            <span class="sr-only">
+                                                {item.label}
+                                            </span>
+                                        </button>
+                                    {/each}
+                                </div>
+                            {/if}
                         </div>
                     {/if}
-                    <span class="text-gray-900 dark:text-white">
-                        {user?.name || user?.email || "User"}
-                    </span>
                 </div>
             {:else}
                 <button

@@ -8,8 +8,6 @@ export const csrf: MiddlewareHandler = async (
   // a.s. check if CSRF token exists in cookies
   let csrfToken = context.cookies.get("csrf-token")?.value;
 
-  console.log("csrfToken", csrfToken);
-
   // a.s. if not, generate and store it
   if (!csrfToken) {
     csrfToken = randomBytes(32).toString("hex");

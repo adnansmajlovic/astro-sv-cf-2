@@ -1,9 +1,13 @@
 ---
 import "../styles/global.css";
-
+import Navbar from "@components/Navbar.svelte";
 export interface Props {
     title?: string;
 }
+
+const auth = Astro.locals.auth;
+let session = Astro.locals.session;
+let user = Astro.locals.user;
 
 const { title = "Astro" } = Astro.props;
 ---
@@ -24,6 +28,7 @@ const { title = "Astro" } = Astro.props;
             }
         </script>
     </head>
+    <Navbar session={session} auth={auth} user={user} client:load />
     <body
         class="dark bg-gray-100 text-gray-900 dark:bg-gray-900 dark:text-white min-h-screen"
     >

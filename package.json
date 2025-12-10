@@ -25,6 +25,7 @@
     "better-auth": "^1.4.5",
     "dotenv": "^17.2.3",
     "drizzle-orm": "^0.45.0",
+    "melt": "^0.42.0",
     "prettier": "^3.7.4",
     "prettier-plugin-astro": "^0.14.1",
     "svelte": "^5.45.6",
