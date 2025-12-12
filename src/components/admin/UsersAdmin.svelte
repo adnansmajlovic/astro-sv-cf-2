@@ -10,13 +10,22 @@
         name: string | null;
         email: string;
         role: UserRole;
-        createdAt: string | Date;
-        updatedAt: string | Date;
+        createdAt: number | Date;
+        updatedAt: number | Date;
     };
+
+    const PAGE_SIZE = 15;
 
     // ---- State ---------------------------------------------------------------
 
     let users = $state<User[]>([]);
+    let nextCursor = $state<string | null>(null);
+    let cursor = $state<string>(""); // current page cursor ("" = first page)
+    let prevStack = $state<string[]>([]);
+
+    let q = $state("");
+    let roleFilter = $state<UserRole | "all">("all");
+
     let selectedUserId = $state<string | null>(null);
     let isLoading = $state(false);
     let isSaving = $state(false);
@@ -27,6 +36,11 @@
         { label: "User", value: "user" },
         { label: "Admin", value: "admin" },
         { label: "Super Admin", value: "super_admin" },
+    ];
+
+    const ROLE_FILTER_OPTIONS: { label: string; value: UserRole | "all" }[] = [
+        { label: "All roles", value: "all" },
+        ...ROLE_OPTIONS,
     ];
 
     let selectedUser = $derived(
@@ -40,17 +54,30 @@
         return ROLE_OPTIONS.find((o) => o.value === role)?.label ?? role;
     }
 
-    // ---- Data ---------------------------------------------------------------
+    function buildUsersURL(cursorValue: string) {
+        const url = new URL("/api/users", window.location.origin);
+        url.searchParams.set("limit", String(PAGE_SIZE));
 
-    async function fetchUsers() {
+        const qq = q.trim();
+        if (qq) url.searchParams.set("q", qq);
+
+        if (roleFilter !== "all") url.searchParams.set("role", roleFilter);
+
+        if (cursorValue) url.searchParams.set("cursor", cursorValue);
+
+        return url.toString();
+    }
+
+    async function fetchPage(cursorValue: string) {
         isLoading = true;
         errorMsg = null;
         successMsg = null;
 
         try {
-            const res = await fetch("/api/users", {
+            const res = await fetch(buildUsersURL(cursorValue), {
                 method: "GET",
                 headers: {
+                    // CSRF middleware skips GET, but harmless if present
                     ...(csrfToken ? { "X-CSRF-Token": csrfToken } : {}),
                 },
             });
@@ -60,12 +87,17 @@
                 throw new Error(body.error || "Failed to fetch users");
             }
 
-            const data = (await res.json()) as User[];
-            users = data;
+            const data = (await res.json()) as {
+                users: User[];
+                nextCursor: string | null;
+                pageCursor: string;
+            };
 
-            if (!selectedUserId && data.length > 0) {
-                selectedUserId = data[0].id;
-            }
+            users = data.users;
+            nextCursor = data.nextCursor;
+            cursor = data.pageCursor || "";
+
+            selectedUserId = data.users[0]?.id ?? null;
         } catch (err) {
             console.error(err);
             errorMsg = (err as Error).message || "Unable to load users.";
@@ -74,9 +106,42 @@
         }
     }
 
+    async function loadFirstPage() {
+        prevStack = [];
+        await fetchPage("");
+    }
+
+    async function nextPage() {
+        if (!nextCursor || isLoading) return;
+
+        // push current page cursor before moving forward
+        prevStack = [...prevStack, cursor];
+        await fetchPage(nextCursor);
+    }
+
+    async function prevPage() {
+        if (prevStack.length === 0 || isLoading) return;
+
+        const prev = prevStack[prevStack.length - 1];
+        prevStack = prevStack.slice(0, -1);
+        await fetchPage(prev);
+    }
+
+    // initial load
     $effect.root(() => {
-        // run once on mount
-        fetchUsers();
+        void loadFirstPage();
+    });
+
+    // reload on filters (debounced)
+    let filterTimer: number | null = null;
+    $effect(() => {
+        q;
+        roleFilter;
+
+        if (filterTimer) window.clearTimeout(filterTimer);
+        filterTimer = window.setTimeout(() => {
+            void loadFirstPage();
+        }, 200);
     });
 
     async function updateRole(newRole: UserRole) {
@@ -92,7 +157,7 @@
 
         const prevRole = selectedUser.role;
 
-        // optimistic update
+        // optimistic update (current page only)
         users = users.map((u) =>
             u.id === selectedUser.id ? { ...u, role: newRole } : u,
         );
@@ -128,13 +193,10 @@
     // ---- Melt Select (Svelte 5 "next" API) -----------------------------------
 
     const select = new MeltSelect<UserRole>({
-        // controlled: use the selected user's role as source of truth
         value: () => (selectedUser ? selectedUser.role : null),
         onValueChange: (value) => {
             if (!selectedUser || value == null) return;
-            if (value !== selectedUser.role) {
-                void updateRole(value);
-            }
+            if (value !== selectedUser.role) void updateRole(value);
         },
     });
 </script>
@@ -150,11 +212,62 @@
             </h2>
             <button
                 class="text-xs px-2 py-1 rounded-md border border-slate-700 bg-slate-900 hover:bg-slate-800 disabled:opacity-50"
-                onclick={fetchUsers}
+                onclick={loadFirstPage}
                 disabled={isLoading}
             >
                 {isLoading ? "Refreshing…" : "Refresh"}
             </button>
+        </div>
+
+        <!-- Filters -->
+        <div class="space-y-2">
+            <input
+                class="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 text-sm placeholder:text-slate-500"
+                placeholder="Search name or email…"
+                value={q}
+                oninput={(e) =>
+                    (q = (e.currentTarget as HTMLInputElement).value)}
+            />
+
+            <select
+                class="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 text-sm"
+                value={roleFilter}
+                onchange={(e) =>
+                    (roleFilter = (e.currentTarget as HTMLSelectElement)
+                        .value as UserRole | "all")}
+            >
+                {#each ROLE_FILTER_OPTIONS as opt}
+                    <option value={opt.value}>{opt.label}</option>
+                {/each}
+            </select>
+
+            <div class="flex items-center gap-2">
+                <button
+                    class="text-xs px-2 py-1 rounded-md border border-slate-700 bg-slate-900 hover:bg-slate-800 disabled:opacity-50"
+                    onclick={prevPage}
+                    disabled={isLoading || prevStack.length === 0}
+                    title={prevStack.length === 0
+                        ? "No previous page"
+                        : "Previous page"}
+                >
+                    ← Prev
+                </button>
+
+                <button
+                    class="text-xs px-2 py-1 rounded-md border border-slate-700 bg-slate-900 hover:bg-slate-800 disabled:opacity-50"
+                    onclick={nextPage}
+                    disabled={isLoading || !nextCursor}
+                    title={!nextCursor ? "No more pages" : "Next page"}
+                >
+                    Next →
+                </button>
+
+                <span class="ml-auto text-xs text-slate-400">
+                    {prevStack.length > 0
+                        ? `Page ${prevStack.length + 1}`
+                        : "Page 1"}
+                </span>
+            </div>
         </div>
 
         {#if errorMsg}
@@ -211,7 +324,6 @@
                     Role
                 </label>
 
-                <!-- Melt Select trigger -->
                 <button
                     {...select.trigger}
                     class="w-56 px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-sm flex items-center justify-between data-[placeholder]:text-slate-500"
@@ -225,7 +337,6 @@
                     <span class="text-xs text-slate-500">▾</span>
                 </button>
 
-                <!-- Melt Select content -->
                 <div
                     {...select.content}
                     class="mt-1 w-56 rounded-lg
@@ -240,7 +351,6 @@
                         <div
                             {...select.getOption(opt.value, opt.label)}
                             class="px-3 py-1.5 cursor-pointer
-                             text-white /* ensure option text is white */
                              hover:bg-slate-700/80
                              data-highlighted:bg-slate-700
                              data-[state='checked']:font-semibold
@@ -255,9 +365,7 @@
                     <p class="text-xs text-slate-400 mt-1">Saving…</p>
                 {/if}
                 {#if successMsg}
-                    <p class="text-xs text-emerald-400 mt-1">
-                        {successMsg}
-                    </p>
+                    <p class="text-xs text-emerald-400 mt-1">{successMsg}</p>
                 {/if}
                 {#if errorMsg}
                     <p class="text-xs text-red-400 mt-1">{errorMsg}</p>

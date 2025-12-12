@@ -4,64 +4,44 @@
 
     let { session, auth, user } = $props();
     let isLoading = $state(false);
-    let error = $state(null);
 
+    let isSigningIn = $state(false);
+    let isSigningOut = $state(false);
+    let error = $state<string | null>(null);
     // --- Auth ----------------------------------------------------------------
 
     async function loginWithGoogle() {
-        if (isLoading) return;
-
+        if (isSigningIn || isSigningOut) return;
         try {
-            isLoading = true;
+            isSigningIn = true;
             error = null;
-            // console.log("Initiating Google login...");
-
             await signIn({
                 callbackURL: window.location.origin + "/",
                 errorCallbackURL: window.location.origin + "/login-error",
                 newUserCallbackURL: window.location.origin + "/welcome",
             });
-
-            // console.log("Google login initiated successfully");
         } catch (err) {
-            console.error("Error logging in with Google:", err);
+            console.error(err);
             error = "Login failed. Please try again.";
-
-            if (err instanceof Error && !err.message.includes("redirect")) {
-                setTimeout(() => {
-                    error = null;
-                }, 5000);
-            }
         } finally {
-            isLoading = false;
+            isSigningIn = false;
         }
     }
 
     async function logout() {
-        if (isLoading) return;
-
+        if (isSigningIn || isSigningOut) return;
         try {
-            isLoading = true;
+            isSigningOut = true;
             error = null;
-            console.log("Starting client-side logout...");
-
-            await signOut({
-                redirectTo: "/",
-            });
-
-            console.log("Logout successful");
+            await signOut({ redirectTo: "/" });
         } catch (err) {
-            console.error("Error logging out:", err);
+            console.error(err);
             error = "Logout failed. Please try again.";
-
-            setTimeout(() => {
-                window.location.href = "/";
-            }, 1000);
+            window.location.href = "/";
         } finally {
-            isLoading = false;
+            isSigningOut = false;
         }
     }
-
     // --- Admin SpatialMenu in navbar ----------------------------------------
 
     type AdminItemId =
@@ -257,10 +237,10 @@
 
                 <button
                     onclick={logout}
-                    disabled={isLoading}
+                    disabled={isSigningOut}
                     class="bg-red-500 hover:bg-red-700 disabled:bg-red-300 disabled:cursor-not-allowed text-white font-bold py-2 px-4 rounded flex items-center gap-2"
                 >
-                    {#if isLoading}
+                    {#if isSigningOut}
                         <svg class="animate-spin h-4 w-4" viewBox="0 0 24 24">
                             <circle
                                 class="opacity-25"
