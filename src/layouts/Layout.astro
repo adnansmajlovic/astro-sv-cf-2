@@ -2,16 +2,20 @@
 import "../styles/global.css";
 import Navbar from "@components/Navbar.svelte";
 import PostHog from "@components/posthog.astro";
+import { ClientRouter } from "astro:transitions";
+
+type Mode = "normal" | "restricted";
 
 export interface Props {
     title?: string;
+    mode?: Mode;
 }
 
 const auth = Astro.locals.auth;
 let session = Astro.locals.session;
 let user = Astro.locals.user;
 
-const { title = "Astro" } = Astro.props;
+const { title = "Astro", mode = "normal" } = Astro.props;
 ---
 
 <!doctype html>
@@ -22,6 +26,7 @@ const { title = "Astro" } = Astro.props;
         <meta name="viewport" content="width=device-width" />
         <meta name="generator" content={Astro.generator} />
         <title>{title}</title>
+        <ClientRouter />
         <PostHog />
         <script is:inline>
             if (window.matchMedia("(prefers-color-scheme: light)").matches) {
@@ -31,7 +36,7 @@ const { title = "Astro" } = Astro.props;
             }
         </script>
     </head>
-    <Navbar session={session} auth={auth} user={user} client:load />
+    <Navbar session={session} auth={auth} user={user} mode={mode} client:load />
     <body
         class="dark bg-gray-100 text-gray-900 dark:bg-gray-900 dark:text-white min-h-screen"
     >

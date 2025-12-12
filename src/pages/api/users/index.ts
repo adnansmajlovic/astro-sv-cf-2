@@ -89,6 +89,7 @@ export const GET: APIRoute = async (context) => {
       name: user.name,
       email: user.email,
       role: user.role,
+      disabled: user.disabled,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     })

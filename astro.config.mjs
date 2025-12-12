@@ -6,7 +6,7 @@ import svelte from "@astrojs/svelte";
 
 export default defineConfig({
   output: "server",
-
+  prefetch: true,
   vite: {
     plugins: [tailwindcss()],
   },

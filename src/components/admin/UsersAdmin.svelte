@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { Select as MeltSelect } from "melt/builders";
+    import { Select as MeltSelect, Toggle } from "melt/builders";
 
     const { csrfToken } = $props<{ csrfToken: string | null }>();
 
@@ -9,6 +9,7 @@
         name: string | null;
         email: string;
         role: UserRole;
+        disabled: boolean; // ✅ NEW
         createdAt: Date | number;
         updatedAt: Date | number;
     };
@@ -83,7 +84,6 @@
             const res = await fetch(buildUsersURL(cursorValue), {
                 method: "GET",
                 headers: {
-                    // CSRF middleware skips GET, but harmless if present
                     ...(csrfToken ? { "X-CSRF-Token": csrfToken } : {}),
                 },
             });
@@ -148,12 +148,34 @@
         }, 200);
     });
 
-    async function updateRole(newRole: UserRole) {
-        if (!selectedUser) return;
+    async function patchUser(id: string, body: Record<string, unknown>) {
         if (!csrfToken) {
             errorMsg = "Missing CSRF token.";
-            return;
+            return { ok: false as const, error: "Missing CSRF token." };
         }
+
+        const res = await fetch(`/api/users/${id}`, {
+            method: "PATCH",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRF-Token": csrfToken,
+            },
+            body: JSON.stringify(body),
+        });
+
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            return {
+                ok: false as const,
+                error: data?.error || "Update failed",
+            };
+        }
+
+        return { ok: true as const };
+    }
+
+    async function updateRole(newRole: UserRole) {
+        if (!selectedUser) return;
 
         isSaving = true;
         errorMsg = null;
@@ -161,27 +183,17 @@
 
         const prevRole = selectedUser.role;
 
-        // optimistic update (current page only)
         users = users.map((u) =>
             u.id === selectedUser.id ? { ...u, role: newRole } : u,
         );
 
         try {
-            const res = await fetch(`/api/users/${selectedUser.id}`, {
-                method: "PATCH",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRF-Token": csrfToken,
-                },
-                body: JSON.stringify({ role: newRole }),
-            });
-
-            if (!res.ok) {
+            const result = await patchUser(selectedUser.id, { role: newRole });
+            if (!result.ok) {
                 users = users.map((u) =>
                     u.id === selectedUser.id ? { ...u, role: prevRole } : u,
                 );
-                const body = await res.json().catch(() => ({}));
-                throw new Error(body?.error || "Failed to update role");
+                throw new Error(result.error);
             }
 
             successMsg = "Role updated successfully.";
@@ -193,12 +205,54 @@
         }
     }
 
+    async function updateDisabled(disabled: boolean) {
+        if (!selectedUser) return;
+
+        isSaving = true;
+        errorMsg = null;
+        successMsg = null;
+
+        const prevDisabled = selectedUser.disabled;
+
+        users = users.map((u) =>
+            u.id === selectedUser.id ? { ...u, disabled } : u,
+        );
+
+        try {
+            const result = await patchUser(selectedUser.id, { disabled });
+            if (!result.ok) {
+                users = users.map((u) =>
+                    u.id === selectedUser.id
+                        ? { ...u, disabled: prevDisabled }
+                        : u,
+                );
+                throw new Error(result.error);
+            }
+
+            successMsg = disabled ? "User disabled." : "User re-enabled.";
+        } catch (err) {
+            console.error(err);
+            errorMsg = (err as Error).message || "Failed to update user.";
+        } finally {
+            isSaving = false;
+        }
+    }
+
     const select = new MeltSelect<UserRole>({
         value: () => (selectedUser ? selectedUser.role : null),
         onValueChange: (value) => {
             if (!selectedUser || value == null) return;
             if (value !== selectedUser.role) void updateRole(value);
         },
+    });
+
+    const disableToggle = new Toggle({
+        value: () => (selectedUser ? selectedUser.disabled : false),
+        onValueChange: (v) => {
+            if (!selectedUser) return;
+            if (v !== selectedUser.disabled) void updateDisabled(v);
+        },
+        disabled: () => isSaving || !selectedUser,
     });
 </script>
 
@@ -303,7 +357,6 @@
 
         <!-- List area -->
         {#if isLoading && users.length === 0}
-            <!-- Skeleton only on first paint (no list yet) -->
             <ul class="space-y-2 max-h-[50vh] overflow-y-auto">
                 {#each Array(8) as _}
                     <li
@@ -337,9 +390,22 @@
                                     : 'hover:bg-slate-900/70 border border-transparent'}"
                                 onclick={() => (selectedUserId = u.id)}
                             >
-                                <div class="font-medium text-slate-100">
-                                    {u.name ?? u.email}
+                                <div
+                                    class="flex items-center justify-between gap-2"
+                                >
+                                    <div class="font-medium text-slate-100">
+                                        {u.name ?? u.email}
+                                    </div>
+
+                                    {#if u.disabled}
+                                        <span
+                                            class="text-[10px] px-2 py-0.5 rounded-full border border-red-800 bg-red-950 text-red-200"
+                                        >
+                                            Disabled
+                                        </span>
+                                    {/if}
                                 </div>
+
                                 <div class="text-xs text-slate-400">
                                     {u.email}
                                 </div>
@@ -355,7 +421,6 @@
                     {/each}
                 </ul>
 
-                <!-- Overlay while paging (keep list visible) -->
                 {#if isLoading && users.length > 0}
                     <div
                         class="pointer-events-none absolute inset-0 rounded-lg bg-slate-950/35 backdrop-blur-[1px]"
@@ -374,65 +439,115 @@
     <section class="md:flex-1 pl-0 md:pl-4 space-y-4">
         {#if selectedUser}
             <header class="space-y-1">
-                <h2 class="text-xl font-semibold tracking-tight text-slate-50">
-                    {selectedUser.name ?? selectedUser.email}
-                </h2>
-                <p class="text-sm text-slate-400">{selectedUser.email}</p>
+                <div class="flex items-center justify-between gap-3">
+                    <div>
+                        <h2
+                            class="text-xl font-semibold tracking-tight text-slate-50"
+                        >
+                            {selectedUser.name ?? selectedUser.email}
+                        </h2>
+                        <p class="text-sm text-slate-400">
+                            {selectedUser.email}
+                        </p>
+                    </div>
+
+                    {#if selectedUser.disabled}
+                        <span
+                            class="text-xs px-2 py-1 rounded-full border border-red-800 bg-red-950 text-red-200"
+                        >
+                            Disabled
+                        </span>
+                    {/if}
+                </div>
             </header>
 
             <div class="h-px bg-slate-800 my-2"></div>
 
-            <div class="space-y-3">
-                <label {...select.label} class="text-sm text-slate-300"
-                    >Role</label
-                >
+            <div class="space-y-4">
+                <!-- Disable access switch -->
+                <div class="flex items-center justify-between max-w-md">
+                    <div class="space-y-0.5">
+                        <div class="text-sm text-slate-200 font-medium">
+                            Disable access
+                        </div>
+                        <div class="text-xs text-slate-400">
+                            Prevent this user from signing in and accessing
+                            protected routes.
+                        </div>
+                    </div>
 
-                <button
-                    {...select.trigger}
-                    class="w-56 px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-sm flex items-center justify-between data-[placeholder]:text-slate-500"
-                >
-                    <span>
-                        {labelForRole(
-                            select.value ??
-                                (selectedUser ? selectedUser.role : null),
-                        )}
-                    </span>
-                    <span class="text-xs text-slate-500">▾</span>
-                </button>
+                    <button
+                        {...disableToggle.trigger}
+                        aria-label="Disable access"
+                        class="relative inline-flex h-6 w-11 items-center rounded-full transition
+                           border border-slate-700 bg-slate-900
+                           data-[checked]:bg-red-900/60 data-[checked]:border-red-700
+                           disabled:opacity-60"
+                    >
+                        <span
+                            class="inline-block h-5 w-5 transform rounded-full bg-slate-200 transition
+                             translate-x-0.5 data-[checked]:translate-x-[1.45rem]"
+                        />
+                    </button>
+                </div>
 
-                <div
-                    {...select.content}
-                    class="mt-1 w-56 rounded-lg
+                <!-- Role select -->
+                <div class="space-y-3">
+                    <label {...select.label} class="text-sm text-slate-300"
+                        >Role</label
+                    >
+
+                    <button
+                        {...select.trigger}
+                        class="w-56 px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-sm flex items-center justify-between data-[placeholder]:text-slate-500"
+                        disabled={isSaving}
+                    >
+                        <span>
+                            {labelForRole(
+                                select.value ??
+                                    (selectedUser ? selectedUser.role : null),
+                            )}
+                        </span>
+                        <span class="text-xs text-slate-500">▾</span>
+                    </button>
+
+                    <div
+                        {...select.content}
+                        class="mt-1 w-56 rounded-lg
                          bg-slate-800/90
                          border border-slate-700
                          shadow-2xl
+                         transition duration-150 ease-out
                          text-sm max-h-60 overflow-auto z-50
                          backdrop-blur-sm
                          text-white"
-                >
-                    {#each ROLE_OPTIONS as opt}
-                        <div
-                            {...select.getOption(opt.value, opt.label)}
-                            class="px-3 py-1.5 cursor-pointer
+                    >
+                        {#each ROLE_OPTIONS as opt}
+                            <div
+                                {...select.getOption(opt.value, opt.label)}
+                                class="px-3 py-1.5 cursor-pointer
                              hover:bg-slate-700/80
                              data-highlighted:bg-slate-700
                              data-[state='checked']:font-semibold
                              transition-colors"
-                        >
-                            {opt.label}
-                        </div>
-                    {/each}
-                </div>
+                            >
+                                {opt.label}
+                            </div>
+                        {/each}
+                    </div>
 
-                {#if isSaving}
-                    <p class="text-xs text-slate-400 mt-1">Saving…</p>
-                {/if}
-                {#if successMsg}
-                    <p class="text-xs text-emerald-400 mt-1">{successMsg}</p>
-                {/if}
-                {#if errorMsg}
-                    <p class="text-xs text-red-400 mt-1">{errorMsg}</p>
-                {/if}
+                    {#if isSaving}
+                        <p class="text-xs text-slate-400 mt-1">Saving…</p>
+                    {/if}
+                    {#if successMsg}
+                        <p class="text-xs text-emerald-400 mt-1">
+                            {successMsg}
+                        </p>
+                    {/if}
+                    {#if errorMsg}
+                        <p class="text-xs text-red-400 mt-1">{errorMsg}</p>
+                    {/if}
+                </div>
             </div>
         {:else}
             <div

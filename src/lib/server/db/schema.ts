@@ -27,6 +27,9 @@ export const user = sqliteTable("user", {
   // NEW: simple single-role field
   role: text("role", { enum: userRoles }).notNull().default("user"),
 
+  // ✅ NEW
+  disabled: integer("disabled", { mode: "boolean" }).default(false).notNull(),
+
   createdAt: integer("created_at", { mode: "timestamp" })
     .default(sql`(current_timestamp)`)
     .notNull(),

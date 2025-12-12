@@ -2,12 +2,15 @@
     import { authClient, signIn, signOut } from "$lib/auth-client";
     import { SpatialMenu } from "melt/builders";
 
-    let { session, auth, user } = $props();
+    type Mode = "normal" | "restricted";
+
+    let { session, auth, user, mode = "normal" } = $props<{ mode?: Mode }>();
     let isLoading = $state(false);
 
     let isSigningIn = $state(false);
     let isSigningOut = $state(false);
     let error = $state<string | null>(null);
+
     // --- Auth ----------------------------------------------------------------
 
     async function loginWithGoogle() {
