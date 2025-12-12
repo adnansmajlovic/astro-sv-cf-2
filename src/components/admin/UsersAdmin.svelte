@@ -4,38 +4,37 @@
     const { csrfToken } = $props<{ csrfToken: string | null }>();
 
     type UserRole = "user" | "admin" | "super_admin";
-
     type User = {
         id: string;
         name: string | null;
         email: string;
         role: UserRole;
-        createdAt: number | Date;
-        updatedAt: number | Date;
+        createdAt: Date | number;
+        updatedAt: Date | number;
     };
-
-    // ---- Pagination ----------------------------------------------------------
 
     const PAGE_SIZE_OPTIONS = [15, 50, 100] as const;
     type PageSize = (typeof PAGE_SIZE_OPTIONS)[number];
 
-    let pageSize = $state<PageSize>(15);
-
     // ---- State ---------------------------------------------------------------
 
     let users = $state<User[]>([]);
-    let nextCursor = $state<string | null>(null);
-    let cursor = $state<string>(""); // current page cursor ("" = first page)
-    let prevStack = $state<string[]>([]);
-
-    let q = $state("");
-    let roleFilter = $state<UserRole | "all">("all");
-
     let selectedUserId = $state<string | null>(null);
+
     let isLoading = $state(false);
     let isSaving = $state(false);
     let errorMsg = $state<string | null>(null);
     let successMsg = $state<string | null>(null);
+
+    // pagination (cursor)
+    let pageSize = $state<PageSize>(15);
+    let nextCursor = $state<string | null>(null);
+    let cursor = $state<string>(""); // current page cursor ("" = first page)
+    let prevStack = $state<string[]>([]);
+
+    // filters
+    let q = $state("");
+    let roleFilter = $state<UserRole | "all">("all");
 
     const ROLE_OPTIONS: { label: string; value: UserRole }[] = [
         { label: "User", value: "user" },
@@ -51,7 +50,6 @@
     let selectedUser = $derived(
         users.find((u) => u.id === selectedUserId) ?? null,
     );
-
     let isFirstPage = $derived(prevStack.length === 0);
     let isLastPage = $derived(nextCursor == null);
 
@@ -85,6 +83,7 @@
             const res = await fetch(buildUsersURL(cursorValue), {
                 method: "GET",
                 headers: {
+                    // CSRF middleware skips GET, but harmless if present
                     ...(csrfToken ? { "X-CSRF-Token": csrfToken } : {}),
                 },
             });
@@ -136,7 +135,7 @@
         void loadFirstPage();
     });
 
-    // reload on filters/pageSize (debounced for q, immediate for role/pageSize)
+    // reload on filters/pageSize (debounce typing)
     let filterTimer: number | null = null;
     $effect(() => {
         q;
@@ -144,8 +143,6 @@
         pageSize;
 
         if (filterTimer) window.clearTimeout(filterTimer);
-
-        // debounce typing, but keeps behavior consistent for all deps
         filterTimer = window.setTimeout(() => {
             void loadFirstPage();
         }, 200);
@@ -164,6 +161,7 @@
 
         const prevRole = selectedUser.role;
 
+        // optimistic update (current page only)
         users = users.map((u) =>
             u.id === selectedUser.id ? { ...u, role: newRole } : u,
         );
@@ -222,9 +220,11 @@
             </button>
         </div>
 
-        <!-- Filters / paging controls -->
+        <!-- Controls -->
         <div class="space-y-2">
+            <label for="users-search" class="sr-only">Search users</label>
             <input
+                id="users-search"
                 class="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 text-sm placeholder:text-slate-500"
                 placeholder="Search name or email…"
                 value={q}
@@ -232,7 +232,10 @@
                     (q = (e.currentTarget as HTMLInputElement).value)}
             />
 
+            <label for="users-role-filter" class="sr-only">Filter by role</label
+            >
             <select
+                id="users-role-filter"
                 class="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 text-sm"
                 value={roleFilter}
                 onchange={(e) =>
@@ -245,8 +248,11 @@
             </select>
 
             <div class="flex items-center gap-2">
-                <label class="text-xs text-slate-400 shrink-0">Per page</label>
+                <label for="per-page" class="text-xs text-slate-400 shrink-0"
+                    >Per page</label
+                >
                 <select
+                    id="per-page"
                     class="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 text-sm"
                     value={String(pageSize)}
                     onchange={(e) => {
@@ -295,8 +301,9 @@
             <p class="text-xs text-red-400">{errorMsg}</p>
         {/if}
 
-        <!-- Skeleton loading -->
+        <!-- List area -->
         {#if isLoading && users.length === 0}
+            <!-- Skeleton only on first paint (no list yet) -->
             <ul class="space-y-2 max-h-[50vh] overflow-y-auto">
                 {#each Array(8) as _}
                     <li
@@ -319,31 +326,47 @@
                 <p class="text-sm text-slate-400">No users found.</p>
             {/if}
 
-            <ul class="space-y-1 max-h-[50vh] overflow-y-auto">
-                {#each users as u}
-                    <li>
-                        <button
-                            class="w-full text-left px-3 py-2 rounded-lg text-sm transition
-              {selectedUserId === u.id
-                                ? 'bg-slate-900 border border-slate-700'
-                                : 'hover:bg-slate-900/70 border border-transparent'}"
-                            onclick={() => (selectedUserId = u.id)}
-                        >
-                            <div class="font-medium text-slate-100">
-                                {u.name ?? u.email}
-                            </div>
-                            <div class="text-xs text-slate-400">{u.email}</div>
-                            <div class="text-xs mt-1">
-                                <span
-                                    class="inline-flex items-center px-1.5 py-0.5 rounded bg-slate-800/70 text-indigo-300 border border-slate-700"
-                                >
-                                    {u.role}
-                                </span>
-                            </div>
-                        </button>
-                    </li>
-                {/each}
-            </ul>
+            <div class="relative">
+                <ul class="space-y-1 max-h-[50vh] overflow-y-auto">
+                    {#each users as u}
+                        <li>
+                            <button
+                                class="w-full text-left px-3 py-2 rounded-lg text-sm transition
+                  {selectedUserId === u.id
+                                    ? 'bg-slate-900 border border-slate-700'
+                                    : 'hover:bg-slate-900/70 border border-transparent'}"
+                                onclick={() => (selectedUserId = u.id)}
+                            >
+                                <div class="font-medium text-slate-100">
+                                    {u.name ?? u.email}
+                                </div>
+                                <div class="text-xs text-slate-400">
+                                    {u.email}
+                                </div>
+                                <div class="text-xs mt-1">
+                                    <span
+                                        class="inline-flex items-center px-1.5 py-0.5 rounded bg-slate-800/70 text-indigo-300 border border-slate-700"
+                                    >
+                                        {u.role}
+                                    </span>
+                                </div>
+                            </button>
+                        </li>
+                    {/each}
+                </ul>
+
+                <!-- Overlay while paging (keep list visible) -->
+                {#if isLoading && users.length > 0}
+                    <div
+                        class="pointer-events-none absolute inset-0 rounded-lg bg-slate-950/35 backdrop-blur-[1px]"
+                    ></div>
+                    <div
+                        class="pointer-events-none absolute top-2 right-2 text-xs text-slate-200"
+                    >
+                        Loading…
+                    </div>
+                {/if}
+            </div>
         {/if}
     </aside>
 
@@ -368,23 +391,33 @@
                     {...select.trigger}
                     class="w-56 px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-sm flex items-center justify-between data-[placeholder]:text-slate-500"
                 >
-                    <span
-                        >{labelForRole(
+                    <span>
+                        {labelForRole(
                             select.value ??
                                 (selectedUser ? selectedUser.role : null),
-                        )}</span
-                    >
+                        )}
+                    </span>
                     <span class="text-xs text-slate-500">▾</span>
                 </button>
 
                 <div
                     {...select.content}
-                    class="mt-1 w-56 rounded-lg bg-slate-800/90 border border-slate-700 shadow-2xl text-sm max-h-60 overflow-auto z-50 backdrop-blur-sm text-white"
+                    class="mt-1 w-56 rounded-lg
+                         bg-slate-800/90
+                         border border-slate-700
+                         shadow-2xl
+                         text-sm max-h-60 overflow-auto z-50
+                         backdrop-blur-sm
+                         text-white"
                 >
                     {#each ROLE_OPTIONS as opt}
                         <div
                             {...select.getOption(opt.value, opt.label)}
-                            class="px-3 py-1.5 cursor-pointer hover:bg-slate-700/80 data-highlighted:bg-slate-700 data-[state='checked']:font-semibold transition-colors"
+                            class="px-3 py-1.5 cursor-pointer
+                             hover:bg-slate-700/80
+                             data-highlighted:bg-slate-700
+                             data-[state='checked']:font-semibold
+                             transition-colors"
                         >
                             {opt.label}
                         </div>

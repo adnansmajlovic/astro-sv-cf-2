@@ -4,19 +4,7 @@ import { and, desc, eq, lt, or, sql } from "drizzle-orm";
 import { user } from "@lib/server/db/schema";
 
 type UserRole = "user" | "admin" | "super_admin";
-type CursorPayload = { createdAt: number; id: string };
-
-function toEpochMs(v: unknown): number {
-  if (typeof v === "number" && Number.isFinite(v)) return v;
-  if (v instanceof Date) return v.getTime();
-  if (typeof v === "string") {
-    const n = Number(v);
-    if (Number.isFinite(n)) return n;
-    const d = new Date(v);
-    if (!Number.isNaN(d.getTime())) return d.getTime();
-  }
-  return NaN;
-}
+type CursorPayload = { createdAtMs: number; id: string };
 
 function encodeCursor(payload: CursorPayload): string {
   return btoa(JSON.stringify(payload));
@@ -26,10 +14,10 @@ function decodeCursor(cursor: string): CursorPayload | null {
   try {
     const raw = atob(cursor);
     const obj = JSON.parse(raw);
-    const createdAt = toEpochMs(obj?.createdAt);
+    const createdAtMs = Number(obj?.createdAtMs);
     const id = String(obj?.id ?? "");
-    if (!Number.isFinite(createdAt) || !id) return null;
-    return { createdAt, id };
+    if (!Number.isFinite(createdAtMs) || !id) return null;
+    return { createdAtMs, id };
   } catch {
     return null;
   }
@@ -40,6 +28,18 @@ function escapeLike(input: string) {
     .replaceAll("\\", "\\\\")
     .replaceAll("%", "\\%")
     .replaceAll("_", "\\_");
+}
+
+function toMs(v: unknown): number {
+  if (v instanceof Date) return v.getTime();
+  if (typeof v === "number" && Number.isFinite(v)) return v;
+  if (typeof v === "string") {
+    const n = Number(v);
+    if (Number.isFinite(n)) return n;
+    const d = new Date(v);
+    if (!Number.isNaN(d.getTime())) return d.getTime();
+  }
+  return NaN;
 }
 
 export const GET: APIRoute = async (context) => {
@@ -53,7 +53,7 @@ export const GET: APIRoute = async (context) => {
 
   const q = (url.searchParams.get("q") ?? "").trim();
   const role = (url.searchParams.get("role") ?? "").trim() as UserRole | "";
-  const pageCursor = url.searchParams.get("cursor") ?? ""; // <-- echo back
+  const pageCursor = url.searchParams.get("cursor") ?? "";
   const cursor = pageCursor ? decodeCursor(pageCursor) : null;
 
   const where: any[] = [];
@@ -72,11 +72,13 @@ export const GET: APIRoute = async (context) => {
     );
   }
 
+  // IMPORTANT: createdAt is mode:"timestamp" => compare with Date values
   if (cursor) {
+    const cursorDate = new Date(cursor.createdAtMs);
     where.push(
       or(
-        lt(user.createdAt, cursor.createdAt),
-        and(eq(user.createdAt, cursor.createdAt), lt(user.id, cursor.id)),
+        lt(user.createdAt, cursorDate),
+        and(eq(user.createdAt, cursorDate), lt(user.id, cursor.id)),
       ),
     );
   }
@@ -103,7 +105,7 @@ export const GET: APIRoute = async (context) => {
   const nextCursor =
     hasNext && last
       ? encodeCursor({
-          createdAt: toEpochMs(last.createdAt),
+          createdAtMs: toMs(last.createdAt),
           id: String(last.id),
         })
       : null;
