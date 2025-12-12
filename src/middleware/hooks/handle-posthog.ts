@@ -21,7 +21,7 @@ export const hndlPostHog: MiddlewareHandler = async (
 
     // ✅ CRITICAL: Must await flush in Workers
     await client.flush();
-    console.log("PostHog flushed");
+    // console.log("PostHog flushed");
   } catch (error) {
     console.error("PostHog capture error:", error);
     // Fail silently - don't break user experience

@@ -1,6 +1,8 @@
 ---
 import "../styles/global.css";
 import Navbar from "@components/Navbar.svelte";
+import PostHog from "@components/posthog.astro";
+
 export interface Props {
     title?: string;
 }
@@ -20,6 +22,7 @@ const { title = "Astro" } = Astro.props;
         <meta name="viewport" content="width=device-width" />
         <meta name="generator" content={Astro.generator} />
         <title>{title}</title>
+        <PostHog />
         <script is:inline>
             if (window.matchMedia("(prefers-color-scheme: light)").matches) {
                 document.documentElement.classList.remove("dark"); // Use light mode
