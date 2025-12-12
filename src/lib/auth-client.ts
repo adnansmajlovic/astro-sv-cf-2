@@ -18,10 +18,10 @@ const getBaseURL = () => {
 
 const baseURL = getBaseURL();
 
-console.log("Auth client config:", {
-  baseURL,
-  // env1: import.meta.env.PUBLIC_BETTER_AUTH_URL,
-});
+// console.log("Auth client config:", {
+//   baseURL,
+//   // env1: import.meta.env.PUBLIC_BETTER_AUTH_URL,
+// });
 
 export const authClient = createAuthClient({
   baseURL,
@@ -38,7 +38,7 @@ export const signIn = async (
   } = {},
 ) => {
   try {
-    console.log("Starting Google sign-in...", { baseURL, options });
+    // console.log("Starting Google sign-in...", { baseURL, options });
 
     const data = await authClient.signIn.social({
       provider: "google",
@@ -49,7 +49,7 @@ export const signIn = async (
         options.newUserCallbackURL || window.location.origin + "/welcome",
     });
 
-    console.log("Sign-in successful:", data);
+    // console.log("Sign-in successful:", data);
     return data;
   } catch (error) {
     console.error("Sign-in error:", error);
@@ -68,7 +68,7 @@ export const signOut = async (
   } = {},
 ) => {
   try {
-    console.log("Starting sign-out...", { baseURL });
+    // console.log("Starting sign-out...", { baseURL });
 
     const data = await authClient.signOut({
       fetchOptions: {
@@ -82,8 +82,6 @@ export const signOut = async (
       },
       ...options,
     });
-
-    console.log("Sign-out completed:", JSON.stringify(data));
 
     // Force redirect after successful sign out
     if (options.redirectTo) {

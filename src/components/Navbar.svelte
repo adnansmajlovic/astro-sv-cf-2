@@ -14,7 +14,7 @@
         try {
             isLoading = true;
             error = null;
-            console.log("Initiating Google login...");
+            // console.log("Initiating Google login...");
 
             await signIn({
                 callbackURL: window.location.origin + "/",
@@ -22,7 +22,7 @@
                 newUserCallbackURL: window.location.origin + "/welcome",
             });
 
-            console.log("Google login initiated successfully");
+            // console.log("Google login initiated successfully");
         } catch (err) {
             console.error("Error logging in with Google:", err);
             error = "Login failed. Please try again.";
@@ -64,19 +64,21 @@
 
     // --- Admin SpatialMenu in navbar ----------------------------------------
 
-    type AdminItemId = "users" | "sessions" | "settings";
+    type AdminItemId =
+        | "users"
+        | "sessions"
+        | "settings"
+        | "billing"
+        | "reports"
+        | "logs"
+        | "roles";
 
-    const ADMIN_ITEMS: {
-        id: AdminItemId;
-        label: string;
-        emoji: string;
-        href: string;
-    }[] = [
+    const ADMIN_ITEMS = [
         {
             id: "users",
-            label: "User admin",
+            label: "User Admin",
             emoji: "👥",
-            href: "/admin/users", // 🔗 hook into user admin page
+            href: "/admin/users",
         },
         {
             id: "sessions",
@@ -89,6 +91,30 @@
             label: "Settings",
             emoji: "⚙️",
             href: "/admin/settings",
+        },
+        {
+            id: "billing",
+            label: "Billing",
+            emoji: "💳",
+            href: "/admin/billing",
+        },
+        {
+            id: "reports",
+            label: "Reports",
+            emoji: "📊",
+            href: "/admin/reports",
+        },
+        {
+            id: "logs",
+            label: "Logs",
+            emoji: "📜",
+            href: "/admin/logs",
+        },
+        {
+            id: "roles",
+            label: "Roles",
+            emoji: "🔐",
+            href: "/admin/roles",
         },
     ];
 
@@ -116,7 +142,7 @@
     <div class="container mx-auto flex justify-between items-center">
         <div class="left-side">
             <a href="/" class="text-xl font-bold text-gray-900 dark:text-white">
-                AstroAuth
+                Adi Q
             </a>
         </div>
 
@@ -130,34 +156,6 @@
             {/if}
 
             {#if session}
-                <button
-                    onclick={logout}
-                    disabled={isLoading}
-                    class="bg-red-500 hover:bg-red-700 disabled:bg-red-300 disabled:cursor-not-allowed text-white font-bold py-2 px-4 rounded flex items-center gap-2"
-                >
-                    {#if isLoading}
-                        <svg class="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                            <circle
-                                class="opacity-25"
-                                cx="12"
-                                cy="12"
-                                r="10"
-                                stroke="currentColor"
-                                stroke-width="4"
-                                fill="none"
-                            ></circle>
-                            <path
-                                class="opacity-75"
-                                fill="currentColor"
-                                d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                            ></path>
-                        </svg>
-                        Signing Out...
-                    {:else}
-                        Sign Out
-                    {/if}
-                </button>
-
                 <div class="flex items-center gap-3">
                     <div class="flex items-center gap-2">
                         {#if user?.image}
@@ -207,44 +205,83 @@
                                 <div
                                     {...adminMenu.root}
                                     class="absolute right-0 mt-3
-                                           grid grid-cols-3 gap-4 p-4
                                            rounded-2xl
-                                           bg-gray-900/95 dark:bg-gray-900/95
+                                           bg-gray-950/95 dark:bg-gray-950/95
                                            border border-gray-700 dark:border-gray-700
                                            shadow-2xl backdrop-blur-md
-                                           text-xs z-50 min-w-[14rem]"
+                                           text-xs z-50
+                                           px-6 py-5
+                                           min-w-[24rem]"
                                 >
-                                    {#each ADMIN_ITEMS as item}
-                                        <button
-                                            {...adminMenu.getItem(item.id)}
-                                            title={item.label}
-                                            onclick={() => {
-                                                handleAdminSelect(item.id);
-                                                adminMenuOpen = false;
-                                            }}
-                                            class="w-16 h-16
-                                                   flex items-center justify-center
-                                                   rounded-2xl
-                                                   bg-gray-800/80
-                                                   hover:bg-gray-700/80
-                                                   data-[highlighted]:bg-gray-700
-                                                   data-[selected]:ring-2 data-[selected]:ring-indigo-500
-                                                   text-gray-50 text-2xl
-                                                   transition-colors"
-                                        >
-                                            <span aria-hidden="true">
-                                                {item.emoji}
-                                            </span>
-                                            <span class="sr-only">
-                                                {item.label}
-                                            </span>
-                                        </button>
-                                    {/each}
+                                    <div
+                                        class="grid grid-cols-4 gap-x-5 gap-y-4"
+                                    >
+                                        {#each ADMIN_ITEMS as item}
+                                            <button
+                                                {...adminMenu.getItem(item.id)}
+                                                title={item.label}
+                                                onclick={() => {
+                                                    handleAdminSelect(item.id);
+                                                    adminMenuOpen = false;
+                                                }}
+                                                class="w-20 h-20 p-2
+                                                       flex flex-col items-center justify-center
+                                                       rounded-2xl
+                                                       bg-gradient-to-br from-cyan-400/20 via-fuchsia-400/10 to-emerald-400/20
+                                                       border border-cyan-400/30
+                                                       hover:border-cyan-300
+                                                       hover:shadow-lg hover:shadow-cyan-400/40
+                                                       data-[highlighted]:border-fuchsia-400
+                                                       data-[selected]:ring-2 data-[selected]:ring-cyan-400
+                                                       text-gray-50 text-xl
+                                                       transition-all duration-150
+                                                       hover:scale-105"
+                                            >
+                                                <span class="text-2xl"
+                                                    >{item.emoji}</span
+                                                >
+
+                                                <span
+                                                    class="text-[0.65rem] leading-tight text-center mt-1 text-cyan-100 break-words"
+                                                >
+                                                    {item.label}
+                                                </span>
+                                            </button>
+                                        {/each}
+                                    </div>
                                 </div>
                             {/if}
                         </div>
                     {/if}
                 </div>
+
+                <button
+                    onclick={logout}
+                    disabled={isLoading}
+                    class="bg-red-500 hover:bg-red-700 disabled:bg-red-300 disabled:cursor-not-allowed text-white font-bold py-2 px-4 rounded flex items-center gap-2"
+                >
+                    {#if isLoading}
+                        <svg class="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                            <circle
+                                class="opacity-25"
+                                cx="12"
+                                cy="12"
+                                r="10"
+                                stroke="currentColor"
+                                stroke-width="4"
+                                fill="none"
+                            ></circle>
+                            <path
+                                class="opacity-75"
+                                fill="currentColor"
+                                d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            ></path>
+                        </svg>
+                        Signing Out...
+                    {:else}
+                        Sign Out
+                    {/if}
+                </button>
             {:else}
                 <button
                     onclick={loginWithGoogle}
