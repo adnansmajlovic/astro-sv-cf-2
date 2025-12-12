@@ -479,14 +479,16 @@
                     <button
                         {...disableToggle.trigger}
                         aria-label="Disable access"
-                        class="relative inline-flex h-6 w-11 items-center rounded-full transition
-                           border border-slate-700 bg-slate-900
-                           data-[checked]:bg-red-900/60 data-[checked]:border-red-700
-                           disabled:opacity-60"
+                        class="group relative inline-flex h-6 w-11 items-center rounded-full transition
+                             border border-slate-700 bg-slate-900
+                             aria-pressed:bg-red-900/60 aria-pressed:border-red-700
+                             disabled:opacity-60"
+                        disabled={isSaving || !selectedUser}
                     >
                         <span
-                            class="inline-block h-5 w-5 transform rounded-full bg-slate-200 transition
-                             translate-x-0.5 data-[checked]:translate-x-[1.45rem]"
+                            class="inline-block h-5 w-5 transform rounded-full bg-slate-200
+                                 transition-transform duration-200 ease-out
+                                 translate-x-0.5 group-aria-pressed:translate-x-5"
                         />
                     </button>
                 </div>
