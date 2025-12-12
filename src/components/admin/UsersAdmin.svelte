@@ -14,7 +14,12 @@
         updatedAt: number | Date;
     };
 
-    const PAGE_SIZE = 15;
+    // ---- Pagination ----------------------------------------------------------
+
+    const PAGE_SIZE_OPTIONS = [15, 50, 100] as const;
+    type PageSize = (typeof PAGE_SIZE_OPTIONS)[number];
+
+    let pageSize = $state<PageSize>(15);
 
     // ---- State ---------------------------------------------------------------
 
@@ -47,6 +52,9 @@
         users.find((u) => u.id === selectedUserId) ?? null,
     );
 
+    let isFirstPage = $derived(prevStack.length === 0);
+    let isLastPage = $derived(nextCursor == null);
+
     // ---- Helpers -------------------------------------------------------------
 
     function labelForRole(role: UserRole | null | undefined): string {
@@ -56,7 +64,7 @@
 
     function buildUsersURL(cursorValue: string) {
         const url = new URL("/api/users", window.location.origin);
-        url.searchParams.set("limit", String(PAGE_SIZE));
+        url.searchParams.set("limit", String(pageSize));
 
         const qq = q.trim();
         if (qq) url.searchParams.set("q", qq);
@@ -77,7 +85,6 @@
             const res = await fetch(buildUsersURL(cursorValue), {
                 method: "GET",
                 headers: {
-                    // CSRF middleware skips GET, but harmless if present
                     ...(csrfToken ? { "X-CSRF-Token": csrfToken } : {}),
                 },
             });
@@ -113,15 +120,12 @@
 
     async function nextPage() {
         if (!nextCursor || isLoading) return;
-
-        // push current page cursor before moving forward
         prevStack = [...prevStack, cursor];
         await fetchPage(nextCursor);
     }
 
     async function prevPage() {
         if (prevStack.length === 0 || isLoading) return;
-
         const prev = prevStack[prevStack.length - 1];
         prevStack = prevStack.slice(0, -1);
         await fetchPage(prev);
@@ -132,13 +136,16 @@
         void loadFirstPage();
     });
 
-    // reload on filters (debounced)
+    // reload on filters/pageSize (debounced for q, immediate for role/pageSize)
     let filterTimer: number | null = null;
     $effect(() => {
         q;
         roleFilter;
+        pageSize;
 
         if (filterTimer) window.clearTimeout(filterTimer);
+
+        // debounce typing, but keeps behavior consistent for all deps
         filterTimer = window.setTimeout(() => {
             void loadFirstPage();
         }, 200);
@@ -157,7 +164,6 @@
 
         const prevRole = selectedUser.role;
 
-        // optimistic update (current page only)
         users = users.map((u) =>
             u.id === selectedUser.id ? { ...u, role: newRole } : u,
         );
@@ -173,7 +179,6 @@
             });
 
             if (!res.ok) {
-                // revert
                 users = users.map((u) =>
                     u.id === selectedUser.id ? { ...u, role: prevRole } : u,
                 );
@@ -189,8 +194,6 @@
             isSaving = false;
         }
     }
-
-    // ---- Melt Select (Svelte 5 "next" API) -----------------------------------
 
     const select = new MeltSelect<UserRole>({
         value: () => (selectedUser ? selectedUser.role : null),
@@ -219,7 +222,7 @@
             </button>
         </div>
 
-        <!-- Filters -->
+        <!-- Filters / paging controls -->
         <div class="space-y-2">
             <input
                 class="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 text-sm placeholder:text-slate-500"
@@ -242,13 +245,29 @@
             </select>
 
             <div class="flex items-center gap-2">
+                <label class="text-xs text-slate-400 shrink-0">Per page</label>
+                <select
+                    class="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 text-sm"
+                    value={String(pageSize)}
+                    onchange={(e) => {
+                        const v = Number(
+                            (e.currentTarget as HTMLSelectElement).value,
+                        ) as PageSize;
+                        pageSize = PAGE_SIZE_OPTIONS.includes(v) ? v : 15;
+                    }}
+                >
+                    {#each PAGE_SIZE_OPTIONS as s}
+                        <option value={String(s)}>{s}</option>
+                    {/each}
+                </select>
+            </div>
+
+            <div class="flex items-center gap-2">
                 <button
                     class="text-xs px-2 py-1 rounded-md border border-slate-700 bg-slate-900 hover:bg-slate-800 disabled:opacity-50"
                     onclick={prevPage}
-                    disabled={isLoading || prevStack.length === 0}
-                    title={prevStack.length === 0
-                        ? "No previous page"
-                        : "Previous page"}
+                    disabled={isLoading || isFirstPage}
+                    title={isFirstPage ? "No previous page" : "Previous page"}
                 >
                     ← Prev
                 </button>
@@ -263,48 +282,69 @@
                 </button>
 
                 <span class="ml-auto text-xs text-slate-400">
-                    {prevStack.length > 0
-                        ? `Page ${prevStack.length + 1}`
-                        : "Page 1"}
+                    Page {prevStack.length + 1} • Showing {users.length} / {pageSize}
                 </span>
             </div>
+
+            {#if !isLoading && users.length > 0 && isLastPage}
+                <p class="text-xs text-slate-500">End of results.</p>
+            {/if}
         </div>
 
         {#if errorMsg}
             <p class="text-xs text-red-400">{errorMsg}</p>
         {/if}
 
-        {#if users.length === 0 && !isLoading}
-            <p class="text-sm text-slate-400">No users found.</p>
-        {/if}
-
-        <ul class="space-y-1 max-h-[50vh] overflow-y-auto">
-            {#each users as u}
-                <li>
-                    <button
-                        class="w-full text-left px-3 py-2 rounded-lg text-sm transition
-              {selectedUserId === u.id
-                            ? 'bg-slate-900 border border-slate-700'
-                            : 'hover:bg-slate-900/70 border border-transparent'}"
-                        onclick={() => (selectedUserId = u.id)}
+        <!-- Skeleton loading -->
+        {#if isLoading && users.length === 0}
+            <ul class="space-y-2 max-h-[50vh] overflow-y-auto">
+                {#each Array(8) as _}
+                    <li
+                        class="px-3 py-3 rounded-lg border border-slate-800 bg-slate-900/40"
                     >
-                        <div class="font-medium text-slate-100">
-                            {u.name ?? u.email}
-                        </div>
-                        <div class="text-xs text-slate-400">
-                            {u.email}
-                        </div>
-                        <div class="text-xs mt-1">
-                            <span
-                                class="inline-flex items-center px-1.5 py-0.5 rounded bg-slate-800/70 text-indigo-300 border border-slate-700"
-                            >
-                                {u.role}
-                            </span>
-                        </div>
-                    </button>
-                </li>
-            {/each}
-        </ul>
+                        <div
+                            class="h-4 w-2/3 rounded bg-slate-800 animate-pulse"
+                        ></div>
+                        <div
+                            class="mt-2 h-3 w-5/6 rounded bg-slate-800 animate-pulse"
+                        ></div>
+                        <div
+                            class="mt-3 h-3 w-16 rounded bg-slate-800 animate-pulse"
+                        ></div>
+                    </li>
+                {/each}
+            </ul>
+        {:else}
+            {#if users.length === 0 && !isLoading}
+                <p class="text-sm text-slate-400">No users found.</p>
+            {/if}
+
+            <ul class="space-y-1 max-h-[50vh] overflow-y-auto">
+                {#each users as u}
+                    <li>
+                        <button
+                            class="w-full text-left px-3 py-2 rounded-lg text-sm transition
+              {selectedUserId === u.id
+                                ? 'bg-slate-900 border border-slate-700'
+                                : 'hover:bg-slate-900/70 border border-transparent'}"
+                            onclick={() => (selectedUserId = u.id)}
+                        >
+                            <div class="font-medium text-slate-100">
+                                {u.name ?? u.email}
+                            </div>
+                            <div class="text-xs text-slate-400">{u.email}</div>
+                            <div class="text-xs mt-1">
+                                <span
+                                    class="inline-flex items-center px-1.5 py-0.5 rounded bg-slate-800/70 text-indigo-300 border border-slate-700"
+                                >
+                                    {u.role}
+                                </span>
+                            </div>
+                        </button>
+                    </li>
+                {/each}
+            </ul>
+        {/if}
     </aside>
 
     <!-- Details -->
@@ -320,41 +360,31 @@
             <div class="h-px bg-slate-800 my-2"></div>
 
             <div class="space-y-3">
-                <label {...select.label} class="text-sm text-slate-300">
-                    Role
-                </label>
+                <label {...select.label} class="text-sm text-slate-300"
+                    >Role</label
+                >
 
                 <button
                     {...select.trigger}
                     class="w-56 px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-sm flex items-center justify-between data-[placeholder]:text-slate-500"
                 >
-                    <span>
-                        {labelForRole(
+                    <span
+                        >{labelForRole(
                             select.value ??
                                 (selectedUser ? selectedUser.role : null),
-                        )}
-                    </span>
+                        )}</span
+                    >
                     <span class="text-xs text-slate-500">▾</span>
                 </button>
 
                 <div
                     {...select.content}
-                    class="mt-1 w-56 rounded-lg
-                         bg-slate-800/90
-                         border border-slate-700
-                         shadow-2xl
-                         text-sm max-h-60 overflow-auto z-50
-                         backdrop-blur-sm
-                         text-white"
+                    class="mt-1 w-56 rounded-lg bg-slate-800/90 border border-slate-700 shadow-2xl text-sm max-h-60 overflow-auto z-50 backdrop-blur-sm text-white"
                 >
                     {#each ROLE_OPTIONS as opt}
                         <div
                             {...select.getOption(opt.value, opt.label)}
-                            class="px-3 py-1.5 cursor-pointer
-                             hover:bg-slate-700/80
-                             data-highlighted:bg-slate-700
-                             data-[state='checked']:font-semibold
-                             transition-colors"
+                            class="px-3 py-1.5 cursor-pointer hover:bg-slate-700/80 data-highlighted:bg-slate-700 data-[state='checked']:font-semibold transition-colors"
                         >
                             {opt.label}
                         </div>
