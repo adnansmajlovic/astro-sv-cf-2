@@ -123,9 +123,18 @@
 
 <nav class="bg-gray-200 dark:bg-gray-800 p-4">
     <div class="container mx-auto flex justify-between items-center">
-        <div class="left-side">
+        <div class="left-side flex items-center gap-6">
             <a href="/" class="text-xl font-bold text-gray-900 dark:text-white">
                 Adi Q
+            </a>
+
+            <a
+                href="/blog"
+                class="text-base font-semibold text-gray-700 hover:text-gray-900
+                   dark:text-gray-200 dark:hover:text-white
+                   underline-offset-4 hover:underline"
+            >
+                Blog
             </a>
         </div>
 

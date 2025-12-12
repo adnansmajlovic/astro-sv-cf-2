@@ -1,12 +1,12 @@
 ---
-import Layout from "@/layouts/Layout.astro";
+import BaseLayout from "@/layouts/BaseLayout.astro";
 import UsersAdmin from "@components/admin/UsersAdmin.svelte";
 
 // CSRF token added in src/middleware.ts:
 const csrfToken = Astro.locals.csrfToken as string | null;
 ---
 
-<Layout>
+<BaseLayout>
     <main
         class="max-w-5xl mx-auto py-10 px-4 space-y-4"
         transition:animate="fade"
@@ -19,4 +19,4 @@ const csrfToken = Astro.locals.csrfToken as string | null;
 
         <UsersAdmin client:load csrfToken={csrfToken} />
     </main>
-</Layout>
+</BaseLayout>

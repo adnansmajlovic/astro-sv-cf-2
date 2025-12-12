@@ -9,13 +9,14 @@ type Mode = "normal" | "restricted";
 export interface Props {
     title?: string;
     mode?: Mode;
+    description?: string;
 }
 
 const auth = Astro.locals.auth;
 let session = Astro.locals.session;
 let user = Astro.locals.user;
 
-const { title = "Astro", mode = "normal" } = Astro.props;
+const { title = "Astro", mode = "normal", description = "" } = Astro.props;
 ---
 
 <!doctype html>
@@ -25,30 +26,59 @@ const { title = "Astro", mode = "normal" } = Astro.props;
         <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
         <meta name="viewport" content="width=device-width" />
         <meta name="generator" content={Astro.generator} />
+
         <title>{title}</title>
+        <meta name="description" content={description} />
+
         <ClientRouter />
         <PostHog />
+
         <script is:inline>
             if (window.matchMedia("(prefers-color-scheme: light)").matches) {
-                document.documentElement.classList.remove("dark"); // Use light mode
+                document.documentElement.classList.remove("dark");
             } else {
-                document.documentElement.classList.add("dark"); // Default to dark mode
+                document.documentElement.classList.add("dark");
             }
         </script>
     </head>
-    <Navbar session={session} auth={auth} user={user} mode={mode} client:load />
+
     <body
         class="dark bg-gray-100 text-gray-900 dark:bg-gray-900 dark:text-white min-h-screen"
     >
+        <Navbar
+            session={session}
+            auth={auth}
+            user={user}
+            mode={mode}
+            client:load
+        />
         <slot />
-    </body>
-
-    <style>
+    </body><style>
         html,
         body {
             margin: 0;
             width: 100%;
             height: 100%;
+        }
+    </style>
+
+    <style is:global>
+        /* Register your custom font family and tell the browser where to find it. */
+        /*@font-face {
+            font-family: "Moniker";
+            src: url("/fonts/MonikerRegular.woff") format("woff");
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }*/
+
+        /* used by pagefind */
+        .dark {
+            --pagefind-ui-primary: #eeeeee;
+            --pagefind-ui-text: #eeeeee;
+            --pagefind-ui-background: #152028;
+            --pagefind-ui-border: #152028;
+            --pagefind-ui-tag: #152028;
         }
     </style>
 </html>

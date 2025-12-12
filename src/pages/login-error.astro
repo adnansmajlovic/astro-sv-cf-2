@@ -1,5 +1,5 @@
 ---
-import Layout from "../layouts/Layout.astro";
+import BaseLayout from "../layouts/BaseLayout.astro";
 
 // Get error details from URL params if available
 const url = new URL(Astro.request.url);
@@ -43,7 +43,7 @@ const userFriendlyMessage =
     "An unexpected error occurred during authentication.";
 ---
 
-<Layout title="Login Error - Adi Q">
+<BaseLayout title="Login Error - Adi Q">
     <main
         class="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8"
     >
@@ -303,4 +303,4 @@ const userFriendlyMessage =
             </div>
         </div>
     </main>
-</Layout>
+</BaseLayout>

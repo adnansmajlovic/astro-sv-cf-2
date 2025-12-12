@@ -1,5 +1,5 @@
 ---
-import Layout from "../layouts/Layout.astro";
+import BaseLayout from "../layouts/BaseLayout.astro";
 import Navbar from "../components/Navbar.svelte";
 
 // Get the session from the auth instance
@@ -42,7 +42,7 @@ try {
 // });
 ---
 
-<Layout title="Adi Q - Welcome">
+<BaseLayout title="Adi Q - Welcome">
     <main class="container mx-auto px-4 py-8">
         {
             session ? (
@@ -121,4 +121,4 @@ try {
             )
         }
     </main>
-</Layout>
+</BaseLayout>

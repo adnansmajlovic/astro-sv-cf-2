@@ -1,5 +1,5 @@
 ---
-import Layout from "../layouts/Layout.astro";
+import BaseLayout from "../layouts/BaseLayout.astro";
 import Navbar from "../components/Navbar.svelte";
 
 // Get the session from the auth instance
@@ -26,7 +26,7 @@ if (!session) {
 }
 ---
 
-<Layout title="Welcome - Adi Q">
+<BaseLayout title="Welcome - Adi Q">
     <Navbar session={session} auth={auth} client:load />
 
     <main
@@ -324,4 +324,4 @@ if (!session) {
             </div>
         </div>
     </main>
-</Layout>
+</BaseLayout>

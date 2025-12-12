@@ -217,7 +217,7 @@ export const ALL: APIRoute = async (context) => {
 ### `src/pages/index.astro`
 ```astro
 ---
-import Layout from "../layouts/Layout.astro";
+import BaseLayout from "../layouts/BaseLayout.astro";
 import Navbar from "../components/Navbar.svelte";
 
 // Get session server-side
@@ -227,10 +227,10 @@ const sessionData = await auth.api.getSession({
 });
 ---
 
-<Layout>
+<BaseLayout>
   <Navbar session={sessionData} client:load />
   <!-- client:load is REQUIRED for Svelte interactivity -->
-</Layout>
+</BaseLayout>
 ```
 
 ## ⚙️ Configuration Files (REQUIRED)

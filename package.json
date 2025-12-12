@@ -4,7 +4,9 @@
   "version": "0.0.1",
   "scripts": {
     "dev": "astro dev",
+    "build-check": "astro check && astro build",
     "build": "astro build",
+    "postbuild": "pagefind --site dist && cp -r dist/pagefind public/",
     "preview": "astro build && wrangler dev",
     "astro": "astro",
     "test:e2e": "playwright test",
@@ -17,6 +19,7 @@
     "cf-typegen": "wrangler types"
   },
   "dependencies": {
+    "@astrojs/check": "^0.9.6",
     "@astrojs/cloudflare": "^12.6.12",
     "@astrojs/svelte": "^7.2.3",
     "@libsql/client": "^0.15.15",
@@ -35,8 +38,10 @@
     "zod": "^4.1.13"
   },
   "devDependencies": {
+    "@tailwindcss/typography": "^0.5.19",
     "@types/node": "^24.10.3",
     "drizzle-kit": "^0.31.8",
+    "pagefind": "^1.4.0",
     "tsx": "^4.21.0",
     "wrangler": "^4.54.0"
   }
