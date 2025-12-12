@@ -68,19 +68,18 @@ const email = Astro.locals.user?.email;
             (e.__SV = 1));
     })(document, window.posthog || []);
 
-    // a.s. revisit this later!
-    // produces errors, but identifies a user
-    // if (email) {
-    //     posthog.alias(email);
-    //     posthog.identify(email, {
-    //         email,
-    //     });
-    // }
-
     posthog.init(PUBLIC_POSTHOG_API_KEY, {
         api_host: PUBLIC_POSTHOG_PROXY_URL,
         defaults: "2025-11-30",
-        distinct_id: email,
         person_profiles: "identified_only", // or 'always' to create profiles for anonymous users as well
+        loaded: function (ph) {
+            if (email) {
+                ph.identify(email, {
+                    email,
+                });
+            } else {
+                console.warn("No email available for PostHog identify");
+            }
+        },
     });
 </script>
