@@ -43,7 +43,7 @@ const { title = "Astro", mode = "normal", description = "" } = Astro.props;
     </head>
 
     <body
-        class="dark bg-gray-100 text-gray-900 dark:bg-gray-900 dark:text-white min-h-screen"
+        class="min-h-screen bg-gray-100 text-gray-900 dark:bg-[#0f172a] dark:text-[#d6d6d1]"
     >
         <Navbar
             session={session}
@@ -59,26 +59,6 @@ const { title = "Astro", mode = "normal", description = "" } = Astro.props;
             margin: 0;
             width: 100%;
             height: 100%;
-        }
-    </style>
-
-    <style is:global>
-        /* Register your custom font family and tell the browser where to find it. */
-        /*@font-face {
-            font-family: "Moniker";
-            src: url("/fonts/MonikerRegular.woff") format("woff");
-            font-weight: normal;
-            font-style: normal;
-            font-display: swap;
-        }*/
-
-        /* used by pagefind */
-        .dark {
-            --pagefind-ui-primary: #eeeeee;
-            --pagefind-ui-text: #eeeeee;
-            --pagefind-ui-background: #152028;
-            --pagefind-ui-border: #152028;
-            --pagefind-ui-tag: #152028;
         }
     </style>
 </html>

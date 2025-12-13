@@ -1,19 +1,21 @@
 ---
-export const prerender = true;
+export const prerender = false;
 
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import { getCollection, getEntry } from "astro:content";
+import { getEntryBySlug, getEntry } from "astro:content";
 
-export async function getStaticPaths() {
-    const posts = (await getCollection("blog")).filter((p) => !p.data.draft);
+const slug = Astro.params.slug;
 
-    return posts.map((post) => ({
-        params: { slug: post.slug },
-        props: { post },
-    }));
+if (!slug) {
+    return new Response("Not found", { status: 404 });
 }
 
-const { post } = Astro.props;
+const post = await getEntryBySlug("blog", slug);
+
+if (!post || post.data.draft) {
+    return new Response("Not found", { status: 404 });
+}
+
 const { Content } = await post.render();
 const author = await getEntry("authors", post.data.authorId);
 ---
@@ -21,7 +23,7 @@ const author = await getEntry("authors", post.data.authorId);
 <BaseLayout title={post.data.title} description={post.data.description}>
     <main class="mx-auto w-full max-w-3xl px-4 py-10 sm:px-6">
         <a
-            href="/blog/"
+            href="/blog"
             class="inline-flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-900/40 px-3 py-2 text-sm text-slate-200
              hover:border-slate-700 hover:bg-slate-900/60"
         >
@@ -64,9 +66,15 @@ const author = await getEntry("authors", post.data.authorId);
             </header>
 
             <div
-                class="prose prose-invert prose-lg sm:prose-xl max-w-none
-                  prose-p:text-slate-200 prose-headings:text-slate-50 prose-a:text-sky-300
-                  prose-strong:text-slate-50 prose-li:text-slate-200"
+                class="prose prose-invert max-w-none prose-p:leading-[1.9]
+                     text-xl sm:text-xl
+                     leading-[1.85]
+                     !text-[#cfcfca]
+                     prose-p:!text-[#cfcfca]
+                     prose-li:!text-[#cfcfca]
+                     prose-strong:!text-[#ecece6]
+                     prose-headings:!text-[#f2f2ee]
+                     prose-a:!text-[#9cc9ff]"
             >
                 <Content />
             </div>

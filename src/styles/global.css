@@ -1,1 +1,28 @@
 @import "tailwindcss";
+
+/* Force calmer text color inside prose content */
+/* Blog reading text – calm, long-form friendly */
+.prose {
+    color: #d6d6d1 !important;
+}
+
+.prose p,
+.prose li {
+    color: #d6d6d1 !important;
+}
+
+.prose strong {
+    color: #ecece6 !important;
+}
+
+.prose h1,
+.prose h2,
+.prose h3,
+.prose h4 {
+    color: #f2f2ee !important;
+}
+
+.prose a {
+    color: #9cc9ff !important;
+    /* soft blue, not neon */
+}
