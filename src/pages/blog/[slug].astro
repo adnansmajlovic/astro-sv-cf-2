@@ -2,18 +2,19 @@
 export const prerender = false;
 
 import BaseLayout from "../../layouts/BaseLayout.astro";
+import Prose from "@components/Prose.astro";
 import { getEntryBySlug, getEntry } from "astro:content";
 
 const slug = Astro.params.slug;
 
 if (!slug) {
-    return new Response("Not found", { status: 404 });
+  return new Response("Not found", { status: 404 });
 }
 
 const post = await getEntryBySlug("blog", slug);
 
 if (!post || post.data.draft) {
-    return new Response("Not found", { status: 404 });
+  return new Response("Not found", { status: 404 });
 }
 
 const { Content } = await post.render();
@@ -21,51 +22,39 @@ const author = await getEntry("authors", post.data.authorId);
 ---
 
 <BaseLayout title={post.data.title} description={post.data.description}>
-    <main class="mx-auto w-full max-w-3xl px-4 py-10 sm:px-6">
-        <a
-            href="/blog"
-            class="inline-flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-900/40 px-3 py-2 text-sm text-slate-200
+  <main class="mx-auto w-full max-w-3xl px-4 py-10 sm:px-6">
+    <a
+      href="/blog"
+      class="inline-flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-900/40 px-3 py-2 text-sm text-slate-200
              hover:border-slate-700 hover:bg-slate-900/60"
+    >
+      <span aria-hidden="true">←</span> Back
+    </a>
+
+    <article class="mt-6">
+      <header class="mb-8">
+        <h1 class="text-3xl font-semibold tracking-tight sm:text-4xl">
+          {post.data.title}
+        </h1>
+
+        <p class="mt-3 text-lg leading-relaxed text-slate-300 sm:text-xl">
+          {post.data.description}
+        </p>
+
+        <div
+          class="mt-5 flex flex-wrap items-center gap-x-3 gap-y-2 text-base text-slate-300"
         >
-            <span aria-hidden="true">←</span> Back
-        </a>
+          <span class="font-medium text-slate-200">{author?.data.name}</span>
+          {author?.data.title ? <span class="text-slate-500">·</span> : null}
+          {author?.data.title ? <span>{author.data.title}</span> : null}
+          <span class="text-slate-500">·</span>
+          <time class="text-slate-400">
+            {post.data.pubDate.toLocaleDateString("en-CA")}
+          </time>
+        </div>
+      </header>
 
-        <article class="mt-6">
-            <header class="mb-8">
-                <h1 class="text-3xl font-semibold tracking-tight sm:text-4xl">
-                    {post.data.title}
-                </h1>
-
-                <p
-                    class="mt-3 text-lg leading-relaxed text-slate-300 sm:text-xl"
-                >
-                    {post.data.description}
-                </p>
-
-                <div
-                    class="mt-5 flex flex-wrap items-center gap-x-3 gap-y-2 text-base text-slate-300"
-                >
-                    <span class="font-medium text-slate-200"
-                        >{author?.data.name}</span
-                    >
-                    {
-                        author?.data.title ? (
-                            <span class="text-slate-500">·</span>
-                        ) : null
-                    }
-                    {
-                        author?.data.title ? (
-                            <span>{author.data.title}</span>
-                        ) : null
-                    }
-                    <span class="text-slate-500">·</span>
-                    <time class="text-slate-400">
-                        {post.data.pubDate.toLocaleDateString("en-CA")}
-                    </time>
-                </div>
-            </header>
-
-            <div
+      <!-- <div
                 class="prose prose-invert max-w-none prose-p:leading-[1.9]
                      text-xl sm:text-xl
                      leading-[1.85]
@@ -75,9 +64,12 @@ const author = await getEntry("authors", post.data.authorId);
                      prose-strong:!text-[#ecece6]
                      prose-headings:!text-[#f2f2ee]
                      prose-a:!text-[#9cc9ff]"
-            >
-                <Content />
-            </div>
-        </article>
-    </main>
+            > -->
+
+      <Prose>
+        <Content />
+      </Prose>
+      <!-- </div> -->
+    </article>
+  </main>
 </BaseLayout>
