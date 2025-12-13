@@ -26,3 +26,8 @@
     color: #9cc9ff !important;
     /* soft blue, not neon */
 }
+
+html,
+body {
+    margin: 0;
+}

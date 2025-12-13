@@ -45,9 +45,10 @@ const author = await getEntry("authors", post.data.authorId);
                 <div
                     class="mt-5 flex flex-wrap items-center gap-x-3 gap-y-2 text-base text-slate-300"
                 >
-                    <span class="font-medium text-slate-200"
-                        >{author?.data.name}</span
-                    >
+                    <span class="font-medium text-slate-200">
+                        {author?.data.name}
+                    </span>
+
                     {
                         author?.data.title ? (
                             <span class="text-slate-500">·</span>
@@ -58,7 +59,25 @@ const author = await getEntry("authors", post.data.authorId);
                             <span>{author.data.title}</span>
                         ) : null
                     }
+
+                    {
+                        author?.data.links?.linkedin ? (
+                            <>
+                                <span class="text-slate-500">·</span>
+                                <a
+                                    href={author.data.links.linkedin}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    class="text-slate-400 hover:text-slate-200 underline-offset-4 hover:underline"
+                                >
+                                    LinkedIn
+                                </a>
+                            </>
+                        ) : null
+                    }
+
                     <span class="text-slate-500">·</span>
+
                     <time class="text-slate-400">
                         {post.data.pubDate.toLocaleDateString("en-CA")}
                     </time>
